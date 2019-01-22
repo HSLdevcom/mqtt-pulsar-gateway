@@ -11,20 +11,20 @@ import java.util.LinkedList;
 public class MqttConnector implements MqttCallback {
     private static final Logger log = LoggerFactory.getLogger(MqttConnector.class);
 
-    private MqttAsyncClient mqttClient;
+    private MqttClient mqttClient;
     private String mqttTopic;
     private int qos;
 
     private final LinkedList<IMqttMessageHandler> handlers = new LinkedList<>();
 
-    MqttConnector(MqttAsyncClient client, String topic, int QoS) {
+    MqttConnector(MqttClient client, String topic, int QoS) {
         this.mqttClient = client;
         this.mqttTopic = topic;
         this.qos = QoS;
     }
 
     public static MqttConnector newInstance(Config config, String username, String password) throws Exception {
-        MqttAsyncClient mqttClient = null;
+        MqttClient mqttClient = null;
         MqttConnector connector = null;
         try {
             final String clientId = config.getString("mqtt-broker.clientId");
@@ -40,28 +40,23 @@ public class MqttConnector implements MqttCallback {
 
             connectOptions.setUserName(username);
             connectOptions.setPassword(password.toCharArray());
+            connectOptions.setConnectionTimeout(10);
 
             //Let's use memory persistance to optimize throughput.
             MemoryPersistence memoryPersistence = new MemoryPersistence();
 
-            mqttClient = new MqttAsyncClient(broker, clientId, memoryPersistence);
+            mqttClient = new MqttClient(broker, clientId, memoryPersistence);
 
             connector = new MqttConnector(mqttClient, topic, QoS);
             mqttClient.setCallback(connector); //Let's add the callback before connecting so we won't lose any messages
 
             log.info(String.format("Connecting to mqtt broker %s", broker));
-            IMqttToken token = mqttClient.connect(connectOptions, null, new IMqttActionListener() {
-                public void onSuccess(IMqttToken asyncActionToken) {
-                    log.info("Connected");
-                }
+            IMqttToken token = mqttClient.connectWithResult(connectOptions);
 
-                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                    log.error("Connection failed: ", exception);
-                }
-            });
-            token.waitForCompletion();
-
-            log.info("Connection to MQTT finished");
+            log.info("Connection to MQTT completed? {}", token.isComplete());
+            if (token.getException() != null) {
+                throw token.getException();
+            }
         }
         catch (Exception e) {
             log.error("Error connecting to MQTT", e);
@@ -86,7 +81,8 @@ public class MqttConnector implements MqttCallback {
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         //Paho never calls this MqttCallback-method which is weird.
-        //Message events are received after subscribing to the client.
+        //Message events are received after subscribing to the client
+        //log.info("HERE: " + topic);
     }
 
     @Override
