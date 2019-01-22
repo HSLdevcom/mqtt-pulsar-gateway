@@ -1,0 +1,35 @@
+sudo: required
+
+language: java
+jdk:
+  - openjdk8
+
+services:
+  - docker
+
+env:
+  global:
+    # Docker Hub cannot handle uppercase characters in repository names. Fix it
+    # with a bashism as Travis CI cannot handle quoting within command
+    # substitution.
+    - LOWERCASE_REPO_SLUG="${TRAVIS_REPO_SLUG,,}"
+    - DOCKER_LOCAL="${LOWERCASE_REPO_SLUG}:${TRAVIS_COMMIT}"
+    - DOCKER_MASTER="${LOWERCASE_REPO_SLUG}:latest"
+
+before_install:
+  - docker --version
+  - echo "ENV GIT_COMMIT ${TRAVIS_COMMIT}" >> Dockerfile
+
+script:
+  - docker build --tag "${DOCKER_LOCAL}" .
+
+deploy:
+  - provider: script
+    script: sh ./.travis/docker_login_tag_push "${DOCKER_LOCAL}" "${DOCKER_MASTER}"
+    on:
+      branch: master
+  - provider: script
+    script: sh ./.travis/docker_login_tag_semver_push "${DOCKER_LOCAL}" "${LOWERCASE_REPO_SLUG}" "${TRAVIS_TAG}"
+    on:
+      tags: true
+      all_branches: true
