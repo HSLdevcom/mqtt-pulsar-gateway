@@ -12,20 +12,11 @@ public class MessageProcessor implements IMqttMessageHandler {
     private static final Logger log = LoggerFactory.getLogger(MessageProcessor.class);
 
     final Producer<byte[]> producer;
-    final MqttConnector connector;
     final PulsarApplication pulsarApp;
 
-    private MessageProcessor(MqttConnector connector, PulsarApplication pulsarApp) {
-        this.connector = connector;
+    public MessageProcessor(PulsarApplication pulsarApp) {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
-    }
-
-    public static MessageProcessor newInstance(MqttConnector connector, PulsarApplication pulsarApp) throws Exception {
-        MessageProcessor processor = new MessageProcessor(connector, pulsarApp);
-        log.info("MessageProcessor subscribing to receive MQTT events");
-        connector.subscribe(processor);
-        return processor;
     }
 
     static int counter = 0;
@@ -43,17 +34,12 @@ public class MessageProcessor implements IMqttMessageHandler {
     @Override
     public void connectionLost(Throwable cause) {
         log.info("Mqtt connection lost");
-        //Let mqtt connection handler clean up itself
-        close(false);
+        close();
     }
 
-    public void close(boolean closeMqtt) {
+    public void close() {
         log.warn("Closing MessageProcessor resources");
         pulsarApp.close();
         log.info("Pulsar connection closed");
-        if (closeMqtt) {
-            connector.close();
-            log.info("MQTT connection closed");
-        }
     }
 }

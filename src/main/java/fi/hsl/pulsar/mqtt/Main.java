@@ -54,10 +54,15 @@ public class Main {
         PulsarApplication app = null;
         try {
             app = PulsarApplication.newInstance(config);
-            connector = MqttConnector.newInstance(config, credentials.username, credentials.password);
+            connector = new MqttConnector(config, credentials.username, credentials.password);
 
-            MessageProcessor.newInstance(connector, app);
-            log.info("Starting to process messages");
+            MessageProcessor processor = new MessageProcessor(app);
+            //Let's subscribe to connector before connecting so we'll get all the events.
+            connector.subscribe(processor);
+
+            connector.connect();
+
+            log.info("Connections established, let's process some messages");
         }
         catch (Exception e) {
             log.error("Exception at main", e);

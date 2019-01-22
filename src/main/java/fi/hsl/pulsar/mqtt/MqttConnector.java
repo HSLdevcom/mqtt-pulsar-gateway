@@ -11,47 +11,52 @@ import java.util.LinkedList;
 public class MqttConnector implements MqttCallback {
     private static final Logger log = LoggerFactory.getLogger(MqttConnector.class);
 
-    private MqttClient mqttClient;
-    private String mqttTopic;
-    private int qos;
+    private final String mqttTopic;
+    private final int qos;
+    private final String clientId;
+    private final String broker;
 
+    private final MqttConnectOptions connectOptions;
     private final LinkedList<IMqttMessageHandler> handlers = new LinkedList<>();
 
-    MqttConnector(MqttClient client, String topic, int QoS) {
-        this.mqttClient = client;
-        this.mqttTopic = topic;
-        this.qos = QoS;
+    private MqttClient mqttClient;
+
+    public MqttConnector(Config config, String username, String password) {
+        mqttTopic = config.getString("mqtt-broker.topic");
+        qos = config.getInt("mqtt-broker.qos");
+        clientId = config.getString("mqtt-broker.clientId");
+        broker = config.getString("mqtt-broker.host");
+
+        final int maxInFlight = config.getInt("mqtt-broker.maxInflight");
+
+        connectOptions = new MqttConnectOptions();
+        connectOptions.setCleanSession(false); //WHY FALSE? WHY NOT TRUE?
+        connectOptions.setMaxInflight(maxInFlight);
+        connectOptions.setAutomaticReconnect(false); //Let's abort on connection errors
+
+        connectOptions.setUserName(username);
+        connectOptions.setPassword(password.toCharArray());
+        connectOptions.setConnectionTimeout(10);
     }
 
-    public static MqttConnector newInstance(Config config, String username, String password) throws Exception {
-        MqttClient mqttClient = null;
-        MqttConnector connector = null;
+    public void subscribe(IMqttMessageHandler handler) {
+        //let's not subscribe to the actual client. we have our own observables here
+        //since we want to provide the disconnected-event via the same interface.
+        log.info("Adding subscription");
+        handlers.add(handler);
+    }
+
+    public void connect() throws Exception {
+        MqttClient client = null;
         try {
-            final String clientId = config.getString("mqtt-broker.clientId");
-            final String broker = config.getString("mqtt-broker.host");
-            final int maxInFlight = config.getInt("mqtt-broker.maxInflight");
-            final String topic = config.getString("mqtt-broker.topic");
-            final int QoS = config.getInt("mqtt-broker.qos");
-
-            MqttConnectOptions connectOptions = new MqttConnectOptions();
-            connectOptions.setCleanSession(false); //WHY FALSE? WHY NOT TRUE?
-            connectOptions.setMaxInflight(maxInFlight);
-            connectOptions.setAutomaticReconnect(false); //Let's abort on connection errors
-
-            connectOptions.setUserName(username);
-            connectOptions.setPassword(password.toCharArray());
-            connectOptions.setConnectionTimeout(10);
-
             //Let's use memory persistance to optimize throughput.
             MemoryPersistence memoryPersistence = new MemoryPersistence();
 
-            mqttClient = new MqttClient(broker, clientId, memoryPersistence);
-
-            connector = new MqttConnector(mqttClient, topic, QoS);
-            mqttClient.setCallback(connector); //Let's add the callback before connecting so we won't lose any messages
+            client = new MqttClient(broker, clientId, memoryPersistence);
+            client.setCallback(this); //Let's add the callback before connecting so we won't lose any messages
 
             log.info(String.format("Connecting to mqtt broker %s", broker));
-            IMqttToken token = mqttClient.connectWithResult(connectOptions);
+            IMqttToken token = client.connectWithResult(connectOptions);
 
             log.info("Connection to MQTT completed? {}", token.isComplete());
             if (token.getException() != null) {
@@ -60,13 +65,13 @@ public class MqttConnector implements MqttCallback {
         }
         catch (Exception e) {
             log.error("Error connecting to MQTT", e);
-            if (mqttClient != null) {
+            if (client != null) {
                 //Paho doesn't close the connection threads unless we force-close it.
-                mqttClient.close(true);
+                client.close(true);
             }
             throw e;
         }
-        return connector;
+        mqttClient = client;
     }
 
     @Override
@@ -80,21 +85,13 @@ public class MqttConnector implements MqttCallback {
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-        //Paho never calls this MqttCallback-method which is weird.
-        //Message events are received after subscribing to the client
-        //log.info("HERE: " + topic);
+        for (IMqttMessageHandler handler: handlers) {
+            handler.handleMessage(topic, message);
+        }
     }
 
     @Override
     public void deliveryComplete(IMqttDeliveryToken token) {}
-
-    public void subscribe(final IMqttMessageHandler handler) throws Exception {
-
-        mqttClient.subscribe(mqttTopic, qos, (String topic, MqttMessage message) -> {
-            handler.handleMessage(topic, message);
-        });
-        handlers.add(handler);
-    }
 
     public void close() {
         try {
@@ -102,6 +99,7 @@ public class MqttConnector implements MqttCallback {
             //Paho doesn't close the connection threads unless we first disconnect and then force-close it.
             mqttClient.disconnectForcibly(5000L);
             mqttClient.close(true);
+            mqttClient = null;
         }
         catch (Exception e) {
             log.error("Failed to close MQTT client connection", e);
