@@ -31,15 +31,24 @@ public class MessageProcessor implements IMqttMessageHandler {
             //If we want to deliver messages once and only once, in insertion order, we might have to
             //do some magic here for performance reasons...
 
-            //TODO insert server timestamp to go with the payload.
-            //TransitdataProperties.
-            producer.send(message.getPayload());
+            long now = System.currentTimeMillis();
+            producer.newMessage()
+                    .eventTime(now)
+                    .property(TransitdataProperties.KEY_SOURCE_MESSAGE_TIMESTAMP_MS, Long.toString(now))
+                    .value(message.getPayload())
+                    .sendAsync()
+                    .exceptionally(throwable -> {
+                        log.error("Failed to send Pulsar message", throwable);
+                        //TODO close the app?
+                        return null;
+                    });
+            //TODO somehow track the rate of these threads and alert if either one differs?
             counter++;
             if (counter % 1000 == 0) {
                 log.info("Got {} messages", counter);
             }
         }
-        catch (PulsarClientException e) {
+        catch (Exception e) {
             log.error("Failed to send Pulsar message", e);
             //might be that we have to close also the mqtt connection. how to make sure this same event will be re-delivered and not acked?
             close();
