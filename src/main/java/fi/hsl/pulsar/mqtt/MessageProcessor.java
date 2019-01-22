@@ -2,7 +2,9 @@ package fi.hsl.pulsar.mqtt;
 
 import fi.hsl.common.pulsar.PulsarApplication;
 
+import fi.hsl.common.transitdata.TransitdataProperties;
 import org.apache.pulsar.client.api.Producer;
+import org.apache.pulsar.client.api.PulsarClientException;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,10 +27,26 @@ public class MessageProcessor implements IMqttMessageHandler {
         // Let's feed the message directly to Pulsar.
         // We could have a queue here to separate these two functionality into separate threads,
         // but error handling would get more complicated
-        counter++;
-        if (counter % 1000 == 0) {
-            log.info("Got {} messages", counter);
+        try {
+            //If we want to deliver messages once and only once, in insertion order, we might have to
+            //do some magic here for performance reasons...
+
+            //TODO insert server timestamp to go with the payload.
+            //TransitdataProperties.
+            producer.send(message.getPayload());
+            counter++;
+            if (counter % 1000 == 0) {
+                log.info("Got {} messages", counter);
+            }
         }
+        catch (PulsarClientException e) {
+            log.error("Failed to send Pulsar message", e);
+            //might be that we have to close also the mqtt connection. how to make sure this same event will be re-delivered and not acked?
+            close();
+            throw e;
+        }
+
+
     }
 
     @Override
