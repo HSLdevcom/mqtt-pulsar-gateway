@@ -94,6 +94,10 @@ public class MqttConnector implements MqttCallback {
     public void deliveryComplete(IMqttDeliveryToken token) {}
 
     public void close() {
+        if (mqttClient == null) {
+            log.warn("Cannot close mqtt connection since it's null");
+            return;
+        }
         try {
             log.info("Closing MqttConnector resources");
             //Paho doesn't close the connection threads unless we first disconnect and then force-close it.

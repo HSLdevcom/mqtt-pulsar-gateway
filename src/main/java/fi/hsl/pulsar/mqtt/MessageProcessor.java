@@ -15,31 +15,40 @@ public class MessageProcessor implements IMqttMessageHandler {
 
     final Producer<byte[]> producer;
     final PulsarApplication pulsarApp;
+    final MqttConnector connector;
 
-    public MessageProcessor(PulsarApplication pulsarApp) {
+    public MessageProcessor(PulsarApplication pulsarApp, MqttConnector connector) {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
+        this.connector = connector;
     }
 
     static int counter = 0;
     @Override
     public void handleMessage(String topic, MqttMessage message) throws Exception {
-        // Let's feed the message directly to Pulsar.
-        // We could have a queue here to separate these two functionality into separate threads,
-        // but error handling would get more complicated
         try {
-            //If we want to deliver messages once and only once, in insertion order, we might have to
-            //do some magic here for performance reasons...
+            // Optimally we would like to send the event to Pulsar synchronously and validate that it was a success,
+            // and only after that acknowledge the message to mqtt by returning gracefully from this function.
+            // This works if the rate of incoming messages is low enough to complete the Pulsar transaction.
+            // This would allow us to deliver messages once and only once, in insertion order
 
+            // If we want to improve our performance and lose guarantees of once-and-only-once,
+            // we can optimize the pipeline by sending messages asynchronously to Pulsar.
+            // This means that data will be lost on insertion errors.
+            // Using a single producer however should guarantee insertion-order guarantee between two consecutive messages.
+
+            // Current implementation uses the latter approach
             long now = System.currentTimeMillis();
             producer.newMessage()
                     .eventTime(now)
                     .property(TransitdataProperties.KEY_SOURCE_MESSAGE_TIMESTAMP_MS, Long.toString(now))
                     .value(message.getPayload())
                     .sendAsync()
+                    //.whenComplete() //Ack paho message here or close the app?
                     .exceptionally(throwable -> {
                         log.error("Failed to send Pulsar message", throwable);
-                        //TODO close the app?
+                        //Let's close everything and restart
+                        close(true);
                         return null;
                     });
             //TODO somehow track the rate of these threads and alert if either one differs?
@@ -49,24 +58,28 @@ public class MessageProcessor implements IMqttMessageHandler {
             }
         }
         catch (Exception e) {
-            log.error("Failed to send Pulsar message", e);
-            //might be that we have to close also the mqtt connection. how to make sure this same event will be re-delivered and not acked?
-            close();
-            throw e;
+            log.error("Error while handling the message", e);
+            // Let's close everything and restart.
+            // Closing the MQTT connection should enable us to receive the same message again.
+            close(true);
         }
-
 
     }
 
     @Override
     public void connectionLost(Throwable cause) {
         log.info("Mqtt connection lost");
-        close();
+        close(false);
     }
 
-    public void close() {
+    public void close(boolean closeMqtt) {
         log.warn("Closing MessageProcessor resources");
         pulsarApp.close();
         log.info("Pulsar connection closed");
+        if (closeMqtt) {
+            connector.close();
+            log.info("MQTT connection closed");
+
+        }
     }
 }
