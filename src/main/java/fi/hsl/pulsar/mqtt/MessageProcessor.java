@@ -74,12 +74,13 @@ public class MessageProcessor implements IMqttMessageHandler {
                     });
 
             int inFlight = inFlightCounter.incrementAndGet();
-            if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
-                log.error("Pulsar insert cannot keep up with the MQTT feed! inflight: {}", inFlight);
-            }
-
             if (++msgCounter % MSG_MONITORING_INTERVAL == 0) {
-                log.info("Currently messages in flight: {}", inFlight);
+                if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
+                    log.error("Pulsar insert cannot keep up with the MQTT feed! In flight: {}", inFlight);
+                }
+                else {
+                    log.info("Currently messages in flight: {}", inFlight);
+                }
             }
         }
         catch (Exception e) {
