@@ -17,6 +17,8 @@ public class MessageProcessor implements IMqttMessageHandler {
     final PulsarApplication pulsarApp;
     final MqttConnector connector;
 
+    private boolean shutdownInProgress = false;
+
     public MessageProcessor(PulsarApplication pulsarApp, MqttConnector connector) {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
@@ -38,6 +40,12 @@ public class MessageProcessor implements IMqttMessageHandler {
             // Using a single producer however should guarantee insertion-order guarantee between two consecutive messages.
 
             // Current implementation uses the latter approach
+
+            if (!producer.isConnected()) {
+                log.error("Pulsar Producer is no longer connected. Exiting application");
+                close(true);
+            }
+
             long now = System.currentTimeMillis();
             producer.newMessage()
                     .eventTime(now)
@@ -73,13 +81,20 @@ public class MessageProcessor implements IMqttMessageHandler {
     }
 
     public void close(boolean closeMqtt) {
+        if (shutdownInProgress) {
+            return;
+        }
+        shutdownInProgress = true;
+
         log.warn("Closing MessageProcessor resources");
-        pulsarApp.close();
-        log.info("Pulsar connection closed");
+        //Let's first close the MQTT to stop the event stream.
         if (closeMqtt) {
             connector.close();
             log.info("MQTT connection closed");
-
         }
+
+        pulsarApp.close();
+        log.info("Pulsar connection closed");
+
     }
 }
