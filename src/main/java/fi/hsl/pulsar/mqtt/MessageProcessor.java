@@ -49,7 +49,6 @@ public class MessageProcessor implements IMqttMessageHandler {
             long now = System.currentTimeMillis();
             producer.newMessage()
                     .eventTime(now)
-                    .property(TransitdataProperties.KEY_SOURCE_MESSAGE_TIMESTAMP_MS, Long.toString(now))
                     .value(message.getPayload())
                     .sendAsync()
                     //.whenComplete() //Ack paho message here or close the app?
