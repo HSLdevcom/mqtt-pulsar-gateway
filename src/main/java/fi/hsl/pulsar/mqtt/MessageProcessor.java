@@ -21,15 +21,20 @@ public class MessageProcessor implements IMqttMessageHandler {
 
     private boolean shutdownInProgress = false;
     private final AtomicInteger inFlightCounter = new AtomicInteger(0);
-    private final int inFlightAlertThreshold;
+    private int msgCounter = 0;
+
+    private final int IN_FLIGHT_ALERT_THRESHOLD;
+    private final int MSG_MONITORING_INTERVAL;
 
     public MessageProcessor(Config config, PulsarApplication pulsarApp, MqttConnector connector) {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
         this.connector = connector;
 
-        inFlightAlertThreshold = config.getInt("application.inFlightAlertThreshold");
-        log.info("Using inFlightAlertThreshold: {}", inFlightAlertThreshold);
+        IN_FLIGHT_ALERT_THRESHOLD = config.getInt("application.inFlightAlertThreshold");
+        MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
+        log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
+
     }
 
     @Override
@@ -69,8 +74,12 @@ public class MessageProcessor implements IMqttMessageHandler {
                     });
 
             int inFlight = inFlightCounter.incrementAndGet();
-            if (inFlight < 0 || inFlight > inFlightAlertThreshold) {
+            if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
                 log.error("Pulsar insert cannot keep up with the MQTT feed! inflight: {}", inFlight);
+            }
+
+            if (++msgCounter % MSG_MONITORING_INTERVAL == 0) {
+                log.info("Currently messages in flight: {}", inFlight);
             }
         }
         catch (Exception e) {
