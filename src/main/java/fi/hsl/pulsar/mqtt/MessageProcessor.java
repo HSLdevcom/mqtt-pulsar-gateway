@@ -1,13 +1,15 @@
 package fi.hsl.pulsar.mqtt;
 
+import com.typesafe.config.Config;
 import fi.hsl.common.pulsar.PulsarApplication;
 
-import fi.hsl.common.transitdata.TransitdataProperties;
+import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
-import org.apache.pulsar.client.api.PulsarClientException;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MessageProcessor implements IMqttMessageHandler {
 
@@ -18,14 +20,18 @@ public class MessageProcessor implements IMqttMessageHandler {
     final MqttConnector connector;
 
     private boolean shutdownInProgress = false;
+    private final AtomicInteger inFlightCounter = new AtomicInteger(0);
+    private final int inFlightAlertThreshold;
 
-    public MessageProcessor(PulsarApplication pulsarApp, MqttConnector connector) {
+    public MessageProcessor(Config config, PulsarApplication pulsarApp, MqttConnector connector) {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
         this.connector = connector;
+
+        inFlightAlertThreshold = config.getInt("application.inFlightAlertThreshold");
+        log.info("Using inFlightAlertThreshold: {}", inFlightAlertThreshold);
     }
 
-    static int counter = 0;
     @Override
     public void handleMessage(String topic, MqttMessage message) throws Exception {
         try {
@@ -51,17 +57,20 @@ public class MessageProcessor implements IMqttMessageHandler {
                     .eventTime(now)
                     .value(message.getPayload())
                     .sendAsync()
-                    //.whenComplete() //Ack paho message here or close the app?
-                    .exceptionally(throwable -> {
-                        log.error("Failed to send Pulsar message", throwable);
-                        //Let's close everything and restart
-                        close(true);
-                        return null;
+                    .whenComplete((MessageId id, Throwable t) -> {
+                        if (t != null) {
+                            log.error("Failed to send Pulsar message", t);
+                            //Let's close everything and restart
+                            close(true);
+                        }
+                        else {
+                            inFlightCounter.decrementAndGet();
+                        }
                     });
-            //TODO somehow track the rate of these threads and alert if either one differs?
-            counter++;
-            if (counter % 1000 == 0) {
-                log.info("Got {} messages", counter);
+
+            int inFlight = inFlightCounter.incrementAndGet();
+            if (inFlight < 0 || inFlight > inFlightAlertThreshold) {
+                log.error("Pulsar insert cannot keep up with the MQTT feed! inflight: {}", inFlight);
             }
         }
         catch (Exception e) {

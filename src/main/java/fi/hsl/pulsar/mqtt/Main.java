@@ -56,7 +56,7 @@ public class Main {
             app = PulsarApplication.newInstance(config);
             connector = new MqttConnector(config, credentials.username, credentials.password);
 
-            MessageProcessor processor = new MessageProcessor(app, connector);
+            MessageProcessor processor = new MessageProcessor(config, app, connector);
             //Let's subscribe to connector before connecting so we'll get all the events.
             connector.subscribe(processor);
 
