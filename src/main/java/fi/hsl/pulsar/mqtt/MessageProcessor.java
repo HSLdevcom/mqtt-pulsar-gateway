@@ -3,6 +3,7 @@ package fi.hsl.pulsar.mqtt;
 import com.typesafe.config.Config;
 import fi.hsl.common.pulsar.PulsarApplication;
 
+import fi.hsl.pulsar.mqtt.hfp.HfpMapperFactory;
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
 import org.eclipse.paho.client.mqttv3.*;
@@ -10,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
 public class MessageProcessor implements IMqttMessageHandler {
 
@@ -26,6 +28,8 @@ public class MessageProcessor implements IMqttMessageHandler {
     private final int IN_FLIGHT_ALERT_THRESHOLD;
     private final int MSG_MONITORING_INTERVAL;
 
+    private BiFunction<String, byte[], byte[]> mapper;
+
     public MessageProcessor(Config config, PulsarApplication pulsarApp, MqttConnector connector) {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
@@ -35,6 +39,7 @@ public class MessageProcessor implements IMqttMessageHandler {
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
 
+        mapper = new HfpMapperFactory().createMapper();
     }
 
     @Override
@@ -58,9 +63,15 @@ public class MessageProcessor implements IMqttMessageHandler {
             }
 
             long now = System.currentTimeMillis();
+
+            byte[] payload = message.getPayload();
+            if (mapper != null) {
+                payload = mapper.apply(topic, payload);
+            }
+
             producer.newMessage()
                     .eventTime(now)
-                    .value(message.getPayload())
+                    .value(payload)
                     .sendAsync()
                     .whenComplete((MessageId id, Throwable t) -> {
                         if (t != null) {
