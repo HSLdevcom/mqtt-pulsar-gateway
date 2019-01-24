@@ -45,6 +45,9 @@ public class MessageProcessor implements IMqttMessageHandler {
     @Override
     public void handleMessage(String topic, MqttMessage message) throws Exception {
         try {
+            // This method is invoked synchronously by the MQTT client (via our connector), so all events arrive in the same thread
+            // https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttCallback.html
+
             // Optimally we would like to send the event to Pulsar synchronously and validate that it was a success,
             // and only after that acknowledge the message to mqtt by returning gracefully from this function.
             // This works if the rate of incoming messages is low enough to complete the Pulsar transaction.
