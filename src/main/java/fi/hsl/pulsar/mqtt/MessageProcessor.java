@@ -3,7 +3,6 @@ package fi.hsl.pulsar.mqtt;
 import com.typesafe.config.Config;
 import fi.hsl.common.pulsar.PulsarApplication;
 
-import fi.hsl.pulsar.mqtt.hfp.HfpMapperFactory;
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
 import org.eclipse.paho.client.mqttv3.*;
@@ -39,7 +38,7 @@ public class MessageProcessor implements IMqttMessageHandler {
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
 
-        mapper = new HfpMapperFactory().createMapper();
+        mapper = new RawMessageFactory().createMapper();
     }
 
     @Override
