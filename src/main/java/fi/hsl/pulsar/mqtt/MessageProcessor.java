@@ -5,10 +5,12 @@ import fi.hsl.common.pulsar.PulsarApplication;
 
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
+import org.apache.pulsar.client.api.TypedMessageBuilder;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
@@ -27,7 +29,8 @@ public class MessageProcessor implements IMqttMessageHandler {
     private final int IN_FLIGHT_ALERT_THRESHOLD;
     private final int MSG_MONITORING_INTERVAL;
 
-    private BiFunction<String, byte[], byte[]> mapper;
+    private final BiFunction<String, byte[], byte[]> mapper;
+    private final Map<String, String> properties;
 
     public MessageProcessor(Config config, PulsarApplication pulsarApp, MqttConnector connector) {
         this.pulsarApp = pulsarApp;
@@ -38,7 +41,9 @@ public class MessageProcessor implements IMqttMessageHandler {
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
 
-        mapper = new RawMessageFactory().createMapper();
+        IMapperFactory factory = new RawMessageFactory();
+        mapper = factory.createMapper();
+        properties = factory.properties();
     }
 
     @Override
@@ -72,10 +77,15 @@ public class MessageProcessor implements IMqttMessageHandler {
             }
 
             if (payload != null) {
-                producer.newMessage()
+                TypedMessageBuilder<byte[]> msgBuilder = producer.newMessage()
                         .eventTime(now)
-                        .value(payload)
-                        .sendAsync()
+                        .value(payload);
+
+                if (properties != null) {
+                    msgBuilder.properties(properties);
+                }
+
+                msgBuilder.sendAsync()
                         .whenComplete((MessageId id, Throwable t) -> {
                             if (t != null) {
                                 log.error("Failed to send Pulsar message", t);

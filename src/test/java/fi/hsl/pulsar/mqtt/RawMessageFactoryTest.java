@@ -1,9 +1,11 @@
 package fi.hsl.pulsar.mqtt;
 
 import fi.hsl.common.mqtt.proto.Mqtt;
+import fi.hsl.common.transitdata.TransitdataProperties;
 import org.junit.Test;
 
 import java.net.URL;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.function.BiFunction;
 
@@ -32,4 +34,19 @@ public class RawMessageFactoryTest {
         assertArrayEquals(payload, msg.getPayload().toByteArray());
 
     }
+
+    @Test
+    public void checkProperties() {
+        Map<String, String> props = new RawMessageFactory().properties();
+        assertEquals(2, props.size());
+        assertEquals(props.get(TransitdataProperties.KEY_SCHEMA_VERSION), "1");
+        assertEquals(props.get(TransitdataProperties.KEY_PROTOBUF_SCHEMA), TransitdataProperties.ProtobufSchema.MqttRawMessage.toString());
+    }
+
+    @Test (expected = Exception.class)
+    public void validatePropertiesAreImmutable() {
+        Map<String, String> props = new RawMessageFactory().properties();
+        props.remove(TransitdataProperties.KEY_SCHEMA_VERSION);
+    }
+
 }
