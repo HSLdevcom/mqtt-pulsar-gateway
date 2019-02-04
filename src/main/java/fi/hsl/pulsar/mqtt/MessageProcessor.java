@@ -5,11 +5,14 @@ import fi.hsl.common.pulsar.PulsarApplication;
 
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
+import org.apache.pulsar.client.api.TypedMessageBuilder;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 
 public class MessageProcessor implements IMqttMessageHandler {
 
@@ -26,6 +29,9 @@ public class MessageProcessor implements IMqttMessageHandler {
     private final int IN_FLIGHT_ALERT_THRESHOLD;
     private final int MSG_MONITORING_INTERVAL;
 
+    private final BiFunction<String, byte[], byte[]> mapper;
+    private final Map<String, String> properties;
+
     public MessageProcessor(Config config, PulsarApplication pulsarApp, MqttConnector connector) {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
@@ -35,11 +41,17 @@ public class MessageProcessor implements IMqttMessageHandler {
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
 
+        IMapperFactory factory = new RawMessageFactory();
+        mapper = factory.createMapper();
+        properties = factory.properties();
     }
 
     @Override
     public void handleMessage(String topic, MqttMessage message) throws Exception {
         try {
+            // This method is invoked synchronously by the MQTT client (via our connector), so all events arrive in the same thread
+            // https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttCallback.html
+
             // Optimally we would like to send the event to Pulsar synchronously and validate that it was a success,
             // and only after that acknowledge the message to mqtt by returning gracefully from this function.
             // This works if the rate of incoming messages is low enough to complete the Pulsar transaction.
@@ -58,30 +70,47 @@ public class MessageProcessor implements IMqttMessageHandler {
             }
 
             long now = System.currentTimeMillis();
-            producer.newMessage()
-                    .eventTime(now)
-                    .value(message.getPayload())
-                    .sendAsync()
-                    .whenComplete((MessageId id, Throwable t) -> {
-                        if (t != null) {
-                            log.error("Failed to send Pulsar message", t);
-                            //Let's close everything and restart
-                            close(true);
-                        }
-                        else {
-                            inFlightCounter.decrementAndGet();
-                        }
-                    });
 
-            int inFlight = inFlightCounter.incrementAndGet();
-            if (++msgCounter % MSG_MONITORING_INTERVAL == 0) {
-                if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
-                    log.error("Pulsar insert cannot keep up with the MQTT feed! In flight: {}", inFlight);
+            byte[] payload = message.getPayload();
+            if (mapper != null) {
+                payload = mapper.apply(topic, payload);
+            }
+
+            if (payload != null) {
+                TypedMessageBuilder<byte[]> msgBuilder = producer.newMessage()
+                        .eventTime(now)
+                        .value(payload);
+
+                if (properties != null) {
+                    msgBuilder.properties(properties);
                 }
-                else {
-                    log.info("Currently messages in flight: {}", inFlight);
+
+                msgBuilder.sendAsync()
+                        .whenComplete((MessageId id, Throwable t) -> {
+                            if (t != null) {
+                                log.error("Failed to send Pulsar message", t);
+                                //Let's close everything and restart
+                                close(true);
+                            }
+                            else {
+                                inFlightCounter.decrementAndGet();
+                            }
+                        });
+
+                int inFlight = inFlightCounter.incrementAndGet();
+                if (++msgCounter % MSG_MONITORING_INTERVAL == 0) {
+                    if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
+                        log.error("Pulsar insert cannot keep up with the MQTT feed! In flight: {}", inFlight);
+                    }
+                    else {
+                        log.info("Currently messages in flight: {}", inFlight);
+                    }
                 }
             }
+            else {
+                log.warn("Cannot forward Message to Pulsar because (mapped) content is null");
+            }
+
         }
         catch (Exception e) {
             log.error("Error while handling the message", e);
