@@ -28,9 +28,10 @@ public class MqttConnector implements MqttCallback {
         broker = config.getString("mqtt-broker.host");
 
         final int maxInFlight = config.getInt("mqtt-broker.maxInflight");
+        final boolean cleanSession = config.getBoolean("mqtt-broker.cleanSession");
 
         connectOptions = new MqttConnectOptions();
-        connectOptions.setCleanSession(false); //WHY FALSE? WHY NOT TRUE?
+        connectOptions.setCleanSession(cleanSession);
         connectOptions.setMaxInflight(maxInFlight);
         connectOptions.setAutomaticReconnect(false); //Let's abort on connection errors
 
