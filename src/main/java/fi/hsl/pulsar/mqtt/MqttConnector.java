@@ -65,14 +65,24 @@ public class MqttConnector implements MqttCallback {
             }
         }
         catch (Exception e) {
-            log.error("Error connecting to MQTT", e);
+            log.error("Error connecting to MQTT broker", e);
             if (client != null) {
                 //Paho doesn't close the connection threads unless we force-close it.
                 client.close(true);
             }
             throw e;
         }
-        mqttClient = client;
+
+        try {
+            log.error("Subscribing to topic {} with QoS {}", mqttTopic, qos);
+            mqttClient = client;
+            mqttClient.subscribe(mqttTopic, qos);
+        }
+        catch (Exception e) {
+            log.error("Error subscribing to MQTT broker", e);
+            close();
+            throw e;
+        }
     }
 
     @Override
