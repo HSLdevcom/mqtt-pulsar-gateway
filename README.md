@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/HSLdevcom/mqtt-pulsar-gateway.svg?branch=master)](https://travis-ci.org/HSLdevcom/mqtt-pulsar-gateway)
+
 ## Description
 
 Application for reading data from MQTT topic and feeding it into Pulsar topic. 
