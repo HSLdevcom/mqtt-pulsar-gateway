@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
+import java.util.Optional;
 
 public class MqttConnector implements MqttCallback {
     private static final Logger log = LoggerFactory.getLogger(MqttConnector.class);
@@ -21,7 +22,7 @@ public class MqttConnector implements MqttCallback {
 
     private MqttClient mqttClient;
 
-    public MqttConnector(Config config, String username, String password) {
+    public MqttConnector(Config config, Optional<Credentials> maybeCredentials) {
         mqttTopic = config.getString("mqtt-broker.topic");
         qos = config.getInt("mqtt-broker.qos");
         clientId = config.getString("mqtt-broker.clientId");
@@ -35,8 +36,10 @@ public class MqttConnector implements MqttCallback {
         connectOptions.setMaxInflight(maxInFlight);
         connectOptions.setAutomaticReconnect(false); //Let's abort on connection errors
 
-        connectOptions.setUserName(username);
-        connectOptions.setPassword(password.toCharArray());
+        maybeCredentials.ifPresent(credentials -> {
+            connectOptions.setUserName(credentials.username);
+            connectOptions.setPassword(credentials.password.toCharArray());
+        });
         connectOptions.setConnectionTimeout(10);
     }
 
