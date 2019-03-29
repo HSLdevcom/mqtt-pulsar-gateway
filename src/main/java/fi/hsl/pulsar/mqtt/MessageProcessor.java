@@ -32,7 +32,7 @@ public class MessageProcessor implements IMqttMessageHandler {
     private final BiFunction<String, byte[], byte[]> mapper;
     private final Map<String, String> properties;
 
-    public MessageProcessor(Config config, PulsarApplication pulsarApp, MqttConnector connector) {
+    public MessageProcessor(Config config, PulsarApplication pulsarApp, MqttConnector connector, final IMapperFactory factory) {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
         this.connector = connector;
@@ -41,7 +41,6 @@ public class MessageProcessor implements IMqttMessageHandler {
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
 
-        IMapperFactory factory = new RawMessageFactory();
         mapper = factory.createMapper();
         properties = factory.properties();
     }

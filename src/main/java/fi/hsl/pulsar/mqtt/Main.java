@@ -30,7 +30,8 @@ public class Main {
             app = PulsarApplication.newInstance(config);
             connector = new MqttConnector(config, credentials);
 
-            IMqttMessageHandler processor = getProcessor(sourceType, config, app, connector);
+            IMapperFactory factory = getMapperFactory(sourceType);
+            MessageProcessor processor = new MessageProcessor(config, app, connector, factory);
             //Let's subscribe to connector before connecting so we'll get all the events.
             connector.subscribe(processor);
 
@@ -53,15 +54,15 @@ public class Main {
         switch (source) {
             case "hfp": return ConfigParser.createConfig("hfp.conf");
             case "metro-schedule": return ConfigParser.createConfig("metro-schedule.conf");
-            default: throw new IllegalArgumentException(String.format("Failed to get config specified by env var SOURCE=%s.", source));
+            default: throw new IllegalArgumentException(String.format("Failed to get Config specified by env var SOURCE=%s.", source));
         }
     }
 
-    private static IMqttMessageHandler getProcessor(final String source, final Config config, final PulsarApplication application, final MqttConnector connector) {
+    private static IMapperFactory getMapperFactory(final String source) {
         switch (source) {
-            case "hfp": return new MessageProcessor(config, application, connector);
-            case "metro-schedule": return new MetroScheduleMessageProcessor(config, application, connector);
-            default: throw new IllegalArgumentException(String.format("Failed to get message processor specified by env var SOURCE=%s.", source));
+            case "hfp": return new RawMessageFactory();
+            case "metro-schedule": return new MetroScheduleFactory();
+            default: throw new IllegalArgumentException(String.format("Failed to get IMapperFactory specified by env var SOURCE=%s.", source));
         }
     }
 }
