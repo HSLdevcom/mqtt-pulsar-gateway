@@ -37,6 +37,9 @@ Requirements:
     - Set filepath for password via env variable FILEPATH_PASSWORD_SECRET, default is `/run/secrets/mqtt_broker_password`
   - Mandatory: Set mqtt-topic via env variable MQTT_TOPIC
   - Remember to use a unique MQTT client-id's if you have multiple instances connected to a single broker.
+- There are two pre-configured MQTT connections that are used by setting SOURCE environment variable.
+  - `SOURCE=hfp`: HFP data used in Transitlog.
+  - `SOURCE=metro-schedule`: Metro schedule data.
 
 All other configuration options are configured in the [config file](src/main/resources/environment.conf)
 which can also be configured externally via env variable CONFIG_PATH
