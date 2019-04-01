@@ -2,6 +2,7 @@ package fi.hsl.pulsar.mqtt;
 
 import com.typesafe.config.Config;
 import fi.hsl.common.config.ConfigParser;
+import fi.hsl.common.config.ConfigUtils;
 import fi.hsl.common.pulsar.PulsarApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +21,8 @@ public class Main {
         MqttConnector connector = null;
         PulsarApplication app = null;
         try {
-            Config config = ConfigParser.createConfig();
+            String sourceType = ConfigUtils.getEnvOrThrow("SOURCE");
+            Config config = getConfig(sourceType);
             Optional<Credentials> credentials = Credentials.readMqttCredentials(config);
 
             log.info("Configurations read, connecting.");
@@ -47,5 +49,13 @@ public class Main {
 
         }
 
+    }
+
+    private static Config getConfig(final String source) {
+        switch (source) {
+            case "hfp": return ConfigParser.createConfig("hfp.conf");
+            case "metro-schedule": return ConfigParser.createConfig("metro-schedule.conf");
+            default: throw new IllegalArgumentException(String.format("Failed to get Config specified by env var SOURCE=%s.", source));
+        }
     }
 }
