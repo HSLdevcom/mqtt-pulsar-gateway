@@ -10,7 +10,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <pulsar.version>2.1.0-incubating</pulsar.version>
-        <common.version>0.7.0</common.version>
+        <common.version>0.8.2</common.version>
         <paho.version>1.2.0</paho.version>
     </properties>
 
