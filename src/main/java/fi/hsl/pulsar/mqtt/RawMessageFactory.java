@@ -28,7 +28,6 @@ public class RawMessageFactory implements IMapperFactory {
                     .setSchemaVersion(builder.getSchemaVersion())
                     .setTopic(topic)
                     .setPayload(ByteString.copyFrom(payload))
-                    .setLastModifiedUtcDateTimeMs(System.currentTimeMillis())
                     .build();
 
             return raw.toByteArray();
