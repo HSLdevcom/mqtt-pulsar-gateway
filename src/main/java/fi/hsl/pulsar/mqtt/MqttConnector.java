@@ -86,7 +86,7 @@ public class MqttConnector implements MqttCallback {
         }
 
         try {
-            log.error("Subscribing to topic {} with QoS {}", mqttTopic, qos);
+            log.info("Subscribing to topic {} with QoS {}", mqttTopic, qos);
             mqttClient = client;
             mqttClient.subscribe(mqttTopic, qos);
         }
