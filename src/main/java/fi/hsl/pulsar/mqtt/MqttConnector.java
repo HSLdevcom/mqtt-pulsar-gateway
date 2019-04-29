@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.Optional;
+import java.util.UUID;
 
 public class MqttConnector implements MqttCallback {
     private static final Logger log = LoggerFactory.getLogger(MqttConnector.class);
@@ -25,7 +26,7 @@ public class MqttConnector implements MqttCallback {
     public MqttConnector(Config config, Optional<Credentials> maybeCredentials) {
         mqttTopic = config.getString("mqtt-broker.topic");
         qos = config.getInt("mqtt-broker.qos");
-        clientId = config.getString("mqtt-broker.clientId");
+        clientId = createClientId(config);
         broker = config.getString("mqtt-broker.host");
 
         final int maxInFlight = config.getInt("mqtt-broker.maxInflight");
@@ -41,6 +42,14 @@ public class MqttConnector implements MqttCallback {
             connectOptions.setPassword(credentials.password.toCharArray());
         });
         connectOptions.setConnectionTimeout(10);
+    }
+
+    String createClientId(Config config) {
+        String clientId = config.getString("mqtt-broker.clientId");
+        if (config.getBoolean("mqtt-broker.addRandomnessToClientId")) {
+            clientId += "-" + UUID.randomUUID().toString().substring(0, 8);
+        }
+        return clientId;
     }
 
     public void subscribe(IMqttMessageHandler handler) {
