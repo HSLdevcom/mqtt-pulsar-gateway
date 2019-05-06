@@ -2,14 +2,17 @@
 
 set -u
 
-[ "$#" -ne 3 ] && {
-  echo "Usage: $(basename "$0") SOURCE_IMAGE[:TAG] TARGET_IMAGE_WITHOUT_TAG TRAVIS_TAG" 1>&2
+[ "$#" -lt 3 ] && {
+  echo "Usage: $(basename "$0") SOURCE_IMAGE[:TAG] TARGET_IMAGE_WITHOUT_TAG TRAVIS_TAG [BUILD_HASH]" 1>&2
   exit 1
 }
 
 SOURCE_IMAGE_TAG="$1"
 TARGET_IMAGE_WITHOUT_TAG="$2"
 TAG_FROM_TRAVIS="$3"
+if [ "$#" -ge 4 ]; then
+  BUILD_HASH="$4"
+fi
 
 PUSH='./.travis/docker_login_tag_push'
 
@@ -27,6 +30,9 @@ if [ "${IS_PRE_RELEASE}" != true ]; then
   SEMVER_MAJOR="$(echo "${SEMVER_MINOR}" | cut -d . -f 1)"
   TARGET_IMAGES="${TARGET_IMAGES} ${TARGET_IMAGE_WITHOUT_TAG}:${SEMVER_MINOR}"
   TARGET_IMAGES="${TARGET_IMAGES} ${TARGET_IMAGE_WITHOUT_TAG}:${SEMVER_MAJOR}"
+  if [ -n "${BUILD_HASH-}" ]; then
+    TARGET_IMAGES="${TARGET_IMAGES} ${TARGET_IMAGE_WITHOUT_TAG}:${SEMVER_FULL}-${BUILD_HASH}"
+  fi
 fi
-
+echo "Pushing source image with tags $TARGET_IMAGES"
 "${PUSH}" "${SOURCE_IMAGE_TAG}" ${TARGET_IMAGES}
