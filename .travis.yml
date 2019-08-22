@@ -13,6 +13,10 @@ addons:
       # Needed for `xmllint`.
       - libxml2-utils
 
+cache:
+  directories:
+  - $HOME/.m2
+
 env:
   global:
     # Docker Hub cannot handle uppercase characters in repository names. Fix it

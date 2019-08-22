@@ -2,14 +2,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fi.hsl.transitlog</groupId>
     <artifactId>mqtt-pulsar-gateway</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <common.version>1.0.0</common.version>
+        <common.version>1.0.8</common.version>
         <paho.version>1.2.0</paho.version>
     </properties>
 
