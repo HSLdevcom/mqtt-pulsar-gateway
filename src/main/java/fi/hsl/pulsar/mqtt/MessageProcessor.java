@@ -144,4 +144,11 @@ public class MessageProcessor implements IMqttMessageHandler {
         log.info("Pulsar connection closed");
 
     }
+
+    public boolean isMqttConnected() {
+        if (connector != null) {
+            return connector.isMqttConnected();
+        }
+        return false;
+    }
 }
