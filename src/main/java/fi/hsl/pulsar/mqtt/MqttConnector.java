@@ -124,12 +124,19 @@ public class MqttConnector implements MqttCallback {
         try {
             log.info("Closing MqttConnector resources");
             //Paho doesn't close the connection threads unless we first disconnect and then force-close it.
-            mqttClient.disconnectForcibly(5000L);
+            mqttClient.disconnectForcibly(1000L, 1000L);
             mqttClient.close(true);
             mqttClient = null;
         }
         catch (Exception e) {
             log.error("Failed to close MQTT client connection", e);
         }
+    }
+
+    public boolean isMqttConnected() {
+        if (mqttClient != null) {
+            return mqttClient.isConnected();
+        }
+        return false;
     }
 }
