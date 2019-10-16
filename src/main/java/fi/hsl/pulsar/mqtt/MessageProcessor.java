@@ -27,7 +27,7 @@ public class MessageProcessor implements IMqttMessageHandler {
     private int msgCounter = 0;
     private long lastMsgTimestamp;
 
-    private final int HEALTHY_MSG_LAST_RECEIVED_SECS;
+    private final int UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS;
     private final int IN_FLIGHT_ALERT_THRESHOLD;
     private final int MSG_MONITORING_INTERVAL;
 
@@ -38,12 +38,13 @@ public class MessageProcessor implements IMqttMessageHandler {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
         this.connector = connector;
-        this.lastMsgTimestamp = System.currentTimeMillis();
+        this.lastMsgTimestamp = -1;
 
-        HEALTHY_MSG_LAST_RECEIVED_SECS = config.getInt("application.healthyMsgLastReceivedSecs");
+        UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS = config.getInt("application.unhealthyMsgReceiveIntervalSecs");
         IN_FLIGHT_ALERT_THRESHOLD = config.getInt("application.inFlightAlertThreshold");
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
+        log.info("Using unhealthy message receive interval threshold of {} s for health check (-1 = not in use)", UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS);
 
         IMapperFactory factory = new RawMessageFactory();
         mapper = factory.createMapper();
@@ -157,15 +158,18 @@ public class MessageProcessor implements IMqttMessageHandler {
         return false;
     }
 
-    public boolean lastMsgReceivedTimeHealthy() {
-        if (HEALTHY_MSG_LAST_RECEIVED_SECS == -1) {
+    public boolean isLastMsgReceiveIntervalHealthy() {
+        if (this.lastMsgTimestamp == -1) {
             return true;
         }
-        long millisDiff = System.currentTimeMillis() - this.lastMsgTimestamp;
-        long secsDiff = Math.round((double) millisDiff/1000);
-        if (secsDiff > HEALTHY_MSG_LAST_RECEIVED_SECS) {
-            log.error("Exceeded HEALTHY_MSG_LAST_RECEIVED_SECS threshold: {} s", HEALTHY_MSG_LAST_RECEIVED_SECS);
-            log.error("Last message received {} s ago. MQTT subscription / connection is considered unhealthy.", secsDiff);
+        if (UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS == -1) {
+            return true;
+        }
+        long intervalMillis = System.currentTimeMillis() - this.lastMsgTimestamp;
+        long intervalSecs = Math.round((double) intervalMillis/1000);
+        if (intervalSecs >= UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS) {
+            log.error("Exceeded UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS threshold: {} s with interval of {} s, considering mqtt subscription unhealthy",
+                    UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS, intervalSecs);
             return false;
         }
         return true;
