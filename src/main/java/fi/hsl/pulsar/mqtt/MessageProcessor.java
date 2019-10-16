@@ -25,7 +25,9 @@ public class MessageProcessor implements IMqttMessageHandler {
     private boolean shutdownInProgress = false;
     private final AtomicInteger inFlightCounter = new AtomicInteger(0);
     private int msgCounter = 0;
+    private long lastMsgTimestamp;
 
+    private final int HEALTHY_MSG_LAST_RECEIVED_SECS;
     private final int IN_FLIGHT_ALERT_THRESHOLD;
     private final int MSG_MONITORING_INTERVAL;
 
@@ -36,7 +38,9 @@ public class MessageProcessor implements IMqttMessageHandler {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
         this.connector = connector;
+        this.lastMsgTimestamp = System.currentTimeMillis();
 
+        HEALTHY_MSG_LAST_RECEIVED_SECS = config.getInt("application.healthyMsgLastReceivedSecs");
         IN_FLIGHT_ALERT_THRESHOLD = config.getInt("application.inFlightAlertThreshold");
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
@@ -48,6 +52,7 @@ public class MessageProcessor implements IMqttMessageHandler {
 
     @Override
     public void handleMessage(String topic, MqttMessage message) throws Exception {
+        this.lastMsgTimestamp = System.currentTimeMillis();
         try {
             // This method is invoked synchronously by the MQTT client (via our connector), so all events arrive in the same thread
             // https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttCallback.html
@@ -150,5 +155,19 @@ public class MessageProcessor implements IMqttMessageHandler {
             return connector.isMqttConnected();
         }
         return false;
+    }
+
+    public boolean lastMsgReceivedTimeHealthy() {
+        if (HEALTHY_MSG_LAST_RECEIVED_SECS == -1) {
+            return true;
+        }
+        long millisDiff = System.currentTimeMillis() - this.lastMsgTimestamp;
+        long secsDiff = Math.round((double) millisDiff/1000);
+        if (secsDiff > HEALTHY_MSG_LAST_RECEIVED_SECS) {
+            log.error("Exceeded HEALTHY_MSG_LAST_RECEIVED_SECS threshold: {} s", HEALTHY_MSG_LAST_RECEIVED_SECS);
+            log.error("Last message received {} s ago. MQTT subscription / connection is considered unhealthy.", secsDiff);
+            return false;
+        }
+        return true;
     }
 }

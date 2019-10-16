@@ -45,9 +45,15 @@ public class Main {
                 }
                 return false;
             };
-
+            final BooleanSupplier lastMsgReceivedHealthCheck = () -> {
+                if (processor != null) {
+                    return processor.lastMsgReceivedTimeHealthy();
+                }
+                return false;
+            };
             if (healthServer != null) {
                 healthServer.addCheck(mqttHealthCheck);
+                healthServer.addCheck(lastMsgReceivedHealthCheck);
             }
 
             log.info("Connections established, let's process some messages");
