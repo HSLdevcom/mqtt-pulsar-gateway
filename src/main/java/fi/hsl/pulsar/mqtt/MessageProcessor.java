@@ -153,7 +153,11 @@ public class MessageProcessor implements IMqttMessageHandler {
 
     public boolean isMqttConnected() {
         if (connector != null) {
-            return connector.isMqttConnected();
+            boolean mqttConnected = connector.isMqttConnected();
+            if (mqttConnected == false) {
+                log.error("Health check: mqtt is not connected");
+            }
+            return mqttConnected;
         }
         return false;
     }
