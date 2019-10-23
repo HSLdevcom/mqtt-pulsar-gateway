@@ -27,7 +27,7 @@ public class MessageProcessor implements IMqttMessageHandler {
     private int msgCounter = 0;
     private long lastMsgTimestamp;
 
-    private final int UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS;
+    private final int UNHEALTHY_MSG_SEND_INTERVAL_SECS;
     private final int IN_FLIGHT_ALERT_THRESHOLD;
     private final int MSG_MONITORING_INTERVAL;
 
@@ -40,11 +40,11 @@ public class MessageProcessor implements IMqttMessageHandler {
         this.connector = connector;
         this.lastMsgTimestamp = -1;
 
-        UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS = config.getInt("application.unhealthyMsgReceiveIntervalSecs");
+        UNHEALTHY_MSG_SEND_INTERVAL_SECS = config.getInt("application.unhealthyMsgSendIntervalSecs");
         IN_FLIGHT_ALERT_THRESHOLD = config.getInt("application.inFlightAlertThreshold");
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
-        log.info("Using unhealthy message receive interval threshold of {} s for health check (-1 = not in use)", UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS);
+        log.info("Using unhealthy message send interval threshold of {} s for health check (-1 = not in use)", UNHEALTHY_MSG_SEND_INTERVAL_SECS);
 
         IMapperFactory factory = new RawMessageFactory();
         mapper = factory.createMapper();
@@ -53,7 +53,6 @@ public class MessageProcessor implements IMqttMessageHandler {
 
     @Override
     public void handleMessage(String topic, MqttMessage message) throws Exception {
-        this.lastMsgTimestamp = System.currentTimeMillis();
         try {
             // This method is invoked synchronously by the MQTT client (via our connector), so all events arrive in the same thread
             // https://www.eclipse.org/paho/files/javadoc/org/eclipse/paho/client/mqttv3/MqttCallback.html
@@ -99,6 +98,7 @@ public class MessageProcessor implements IMqttMessageHandler {
                                 close(true);
                             }
                             else {
+                                this.lastMsgTimestamp = System.currentTimeMillis();
                                 inFlightCounter.decrementAndGet();
                             }
                         });
@@ -162,18 +162,18 @@ public class MessageProcessor implements IMqttMessageHandler {
         return false;
     }
 
-    public boolean isLastMsgReceiveIntervalHealthy() {
+    public boolean isLastMsgSendIntervalHealthy() {
         if (this.lastMsgTimestamp == -1) {
             return true;
         }
-        if (UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS == -1) {
+        if (UNHEALTHY_MSG_SEND_INTERVAL_SECS == -1) {
             return true;
         }
         long intervalMillis = System.currentTimeMillis() - this.lastMsgTimestamp;
         long intervalSecs = Math.round((double) intervalMillis/1000);
-        if (intervalSecs >= UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS) {
-            log.error("Exceeded UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS threshold: {} s with interval of {} s, considering mqtt subscription unhealthy",
-                    UNHEALTHY_MSG_RECEIVE_INTERVAL_SECS, intervalSecs);
+        if (intervalSecs >= UNHEALTHY_MSG_SEND_INTERVAL_SECS) {
+            log.error("Exceeded UNHEALTHY_MSG_SEND_INTERVAL_SECS threshold: {} s with interval of {} s, considering mqtt subscription unhealthy",
+                    UNHEALTHY_MSG_SEND_INTERVAL_SECS, intervalSecs);
             return false;
         }
         return true;
