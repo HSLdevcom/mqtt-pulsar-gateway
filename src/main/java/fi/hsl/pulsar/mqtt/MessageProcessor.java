@@ -38,7 +38,7 @@ public class MessageProcessor implements IMqttMessageHandler {
         this.pulsarApp = pulsarApp;
         this.producer = pulsarApp.getContext().getProducer();
         this.connector = connector;
-        this.lastMsgTimestamp = -1;
+        this.lastMsgTimestamp = System.currentTimeMillis();
 
         UNHEALTHY_MSG_SEND_INTERVAL_SECS = config.getInt("application.unhealthyMsgSendIntervalSecs");
         IN_FLIGHT_ALERT_THRESHOLD = config.getInt("application.inFlightAlertThreshold");
