@@ -33,9 +33,9 @@ public class MqttConnector implements MqttCallback {
         final boolean cleanSession = config.getBoolean("mqtt-broker.cleanSession");
 
         connectOptions = new MqttConnectOptions();
-        connectOptions.setCleanSession(cleanSession);
+        connectOptions.setCleanSession(cleanSession); //This should be false for persistent subscription
         connectOptions.setMaxInflight(maxInFlight);
-        connectOptions.setAutomaticReconnect(false); //Let's abort on connection errors
+        connectOptions.setAutomaticReconnect(true); //Let's abort on connection errors
 
         maybeCredentials.ifPresent(credentials -> {
             connectOptions.setUserName(credentials.username);
@@ -46,9 +46,11 @@ public class MqttConnector implements MqttCallback {
 
     String createClientId(Config config) {
         String clientId = config.getString("mqtt-broker.clientId");
-        if (config.getBoolean("mqtt-broker.addRandomnessToClientId")) {
+        if (config.getBoolean("mqtt-broker.addRandomnessToClientId")) { //This prevents persistent delivery of messages
+            log.info("Creating random clientId for mqtt subscription");
             clientId += "-" + UUID.randomUUID().toString().substring(0, 8);
         }
+        log.info("Created clientId for mqtt subscription: {}", clientId);
         return clientId;
     }
 
