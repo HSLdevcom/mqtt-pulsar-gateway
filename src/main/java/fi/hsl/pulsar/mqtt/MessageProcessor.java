@@ -3,6 +3,7 @@ package fi.hsl.pulsar.mqtt;
 import com.typesafe.config.Config;
 import fi.hsl.common.pulsar.PulsarApplication;
 
+import fi.hsl.common.transitdata.TransitdataProperties;
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.TypedMessageBuilder;
@@ -10,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -86,9 +88,14 @@ public class MessageProcessor implements IMqttMessageHandler {
                         .eventTime(now)
                         .value(payload);
 
-                if (properties != null) {
-                    msgBuilder.properties(properties);
+                Map<String, String> properties = new HashMap<>();
+
+                if (this.properties != null) {
+                    properties.putAll(this.properties);
                 }
+                properties.put(TransitdataProperties.KEY_SOURCE_MESSAGE_TIMESTAMP_MS, String.valueOf(now));
+
+                msgBuilder.properties(properties);
 
                 msgBuilder.sendAsync()
                         .whenComplete((MessageId id, Throwable t) -> {
@@ -154,7 +161,7 @@ public class MessageProcessor implements IMqttMessageHandler {
     public boolean isMqttConnected() {
         if (connector != null) {
             boolean mqttConnected = connector.isMqttConnected();
-            if (mqttConnected == false) {
+            if (!mqttConnected) {
                 log.error("Health check: mqtt is not connected");
             }
             return mqttConnected;

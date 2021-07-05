@@ -1,0 +1,66 @@
+name: Test and create Docker image
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - name: Cache Maven packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build with Maven
+        run: mvn --file pom.xml clean install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload .jar file
+        uses: actions/upload-artifact@v2
+        with:
+          name: mqtt-pulsar-gateway.jar
+          path: target/mqtt-pulsar-gateway.jar
+  build-develop-docker-image:
+    needs: test
+    runs-on: ubuntu-latest
+    # Run only on develop branch
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download .jar file
+        uses: actions/download-artifact@v2
+        with:
+          name: mqtt-pulsar-gateway.jar
+          path: target
+      - name: Build and publish develop Docker image
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: hsldevcom/mqtt-pulsar-gateway
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tags: develop
+  build-release-docker-image:
+    needs: test
+    runs-on: ubuntu-latest
+    # Run only for tagged commits
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download .jar file
+        uses: actions/download-artifact@v2
+        with:
+          name: mqtt-pulsar-gateway.jar
+          path: target
+      - name: Build and publish release Docker image
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: hsldevcom/mqtt-pulsar-gateway
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          tag_semver: true
