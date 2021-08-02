@@ -24,8 +24,8 @@ jobs:
       - name: Upload .jar file
         uses: actions/upload-artifact@v2
         with:
-          name: mqtt-pulsar-gateway.jar
-          path: target/mqtt-pulsar-gateway.jar
+          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          path: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
   build-develop-docker-image:
     needs: test
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v2
         with:
-          name: mqtt-pulsar-gateway.jar
+          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
           path: target
       - name: Build and publish develop Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -55,7 +55,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v2
         with:
-          name: mqtt-pulsar-gateway.jar
+          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
           path: target
       - name: Build and publish release Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
