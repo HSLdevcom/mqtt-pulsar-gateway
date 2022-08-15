@@ -73,7 +73,10 @@ public class MessageProcessor implements IMqttMessageHandler {
                     //This should not happen, but let's log it anyways
                     log.warn("Thread was interrupted?", e);
                 }
-                BusyWait.delay(delayBetweenMessagesNs);
+
+                if (delayBetweenMessagesNs > 0) {
+                    BusyWait.delay(delayBetweenMessagesNs);
+                }
             }
         });
         messageSendThread.setName("MessageSendThread");
