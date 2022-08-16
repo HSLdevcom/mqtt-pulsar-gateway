@@ -35,7 +35,7 @@ public class MqttConnector implements MqttCallback {
         connectOptions = new MqttConnectOptions();
         connectOptions.setCleanSession(cleanSession); //This should be false for persistent subscription
         connectOptions.setMaxInflight(maxInFlight);
-        connectOptions.setAutomaticReconnect(true); //Let's abort on connection errors
+        connectOptions.setAutomaticReconnect(false); //Let's abort on connection errors
 
         maybeCredentials.ifPresent(credentials -> {
             connectOptions.setUserName(credentials.username);
