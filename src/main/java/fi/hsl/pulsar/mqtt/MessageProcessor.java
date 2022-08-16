@@ -155,13 +155,11 @@ public class MessageProcessor implements IMqttMessageHandler {
                 msgBuilder.properties(properties);
 
                 messageQueue.offer(msgBuilder);
-            }
-            else {
+            } else {
                 log.warn("Cannot forward Message to Pulsar because (mapped) content is null");
             }
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error while handling the message", e);
             // Let's close everything and restart.
             // Closing the MQTT connection should enable us to receive the same message again.
@@ -172,7 +170,7 @@ public class MessageProcessor implements IMqttMessageHandler {
 
     @Override
     public void connectionLost(Throwable cause) {
-        log.info("Mqtt connection lost");
+        log.warn("MQTT connection lost", cause);
         close(false);
     }
 
@@ -198,7 +196,7 @@ public class MessageProcessor implements IMqttMessageHandler {
         if (connector != null) {
             boolean mqttConnected = connector.isMqttConnected();
             if (!mqttConnected) {
-                log.error("Health check: mqtt is not connected");
+                log.error("Health check: MQTT is not connected");
             }
             return mqttConnected;
         }
