@@ -18,7 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload .jar file
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: mqtt-pulsar-gateway-jar-with-dependencies.jar
           path: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
