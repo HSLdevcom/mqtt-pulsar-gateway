@@ -31,11 +31,13 @@ public class MqttConnector implements MqttCallback {
 
         final int maxInFlight = config.getInt("mqtt-broker.maxInflight");
         final boolean cleanSession = config.getBoolean("mqtt-broker.cleanSession");
+        final int keepAliveInterval = config.getInt("mqtt-broker.keepAliveInterval");
 
         connectOptions = new MqttConnectOptions();
         connectOptions.setCleanSession(cleanSession); //This should be false for persistent subscription
         connectOptions.setMaxInflight(maxInFlight);
-        connectOptions.setAutomaticReconnect(true); //Let's abort on connection errors
+        connectOptions.setAutomaticReconnect(false); //Let's abort on connection errors
+        connectOptions.setKeepAliveInterval(keepAliveInterval);
 
         maybeCredentials.ifPresent(credentials -> {
             connectOptions.setUserName(credentials.username);

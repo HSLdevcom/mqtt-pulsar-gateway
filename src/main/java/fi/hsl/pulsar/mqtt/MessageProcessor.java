@@ -4,6 +4,7 @@ import com.typesafe.config.Config;
 import fi.hsl.common.pulsar.PulsarApplication;
 
 import fi.hsl.common.transitdata.TransitdataProperties;
+import fi.hsl.pulsar.mqtt.utils.BusyWait;
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.TypedMessageBuilder;
@@ -13,12 +14,15 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 public class MessageProcessor implements IMqttMessageHandler {
-
     private static final Logger log = LoggerFactory.getLogger(MessageProcessor.class);
+
+    private static final long NS_IN_SECOND = 1_000_000_000;
 
     final Producer<byte[]> producer;
     final PulsarApplication pulsarApp;
@@ -33,6 +37,12 @@ public class MessageProcessor implements IMqttMessageHandler {
     private final int IN_FLIGHT_ALERT_THRESHOLD;
     private final int MSG_MONITORING_INTERVAL;
 
+    private final long delayBetweenMessagesNs;
+
+    private final BlockingQueue<TypedMessageBuilder<byte[]>> messageQueue = new LinkedBlockingQueue<>();
+
+    private final Thread messageSendThread;
+
     private final BiFunction<String, byte[], byte[]> mapper;
     private final Map<String, String> properties;
 
@@ -45,12 +55,59 @@ public class MessageProcessor implements IMqttMessageHandler {
         UNHEALTHY_MSG_SEND_INTERVAL_SECS = config.getInt("application.unhealthyMsgSendIntervalSecs");
         IN_FLIGHT_ALERT_THRESHOLD = config.getInt("application.inFlightAlertThreshold");
         MSG_MONITORING_INTERVAL = config.getInt("application.msgMonitoringInterval");
+
+        delayBetweenMessagesNs = NS_IN_SECOND / config.getLong("application.maxMessagesPerSecond");
+
         log.info("Using in-flight alert threshold of {} with monitoring interval of {} messages", IN_FLIGHT_ALERT_THRESHOLD, MSG_MONITORING_INTERVAL);
         log.info("Using unhealthy message send interval threshold of {} s for health check (-1 = not in use)", UNHEALTHY_MSG_SEND_INTERVAL_SECS);
 
         IMapperFactory factory = new RawMessageFactory();
         mapper = factory.createMapper();
         properties = factory.properties();
+
+        messageSendThread = new Thread(() -> {
+            while (!shutdownInProgress) {
+                try {
+                    sendMessageFromQueue();
+                } catch (InterruptedException e) {
+                    //This should not happen, but let's log it anyways
+                    log.warn("Thread was interrupted?", e);
+                }
+
+                if (delayBetweenMessagesNs > 0) {
+                    BusyWait.delay(delayBetweenMessagesNs);
+                }
+            }
+        });
+        messageSendThread.setName("MessageSendThread");
+        messageSendThread.setDaemon(true);
+        messageSendThread.start();
+    }
+
+    public void sendMessageFromQueue() throws InterruptedException {
+        TypedMessageBuilder<byte[]> msgBuilder = messageQueue.take();
+
+        msgBuilder.sendAsync()
+                .whenComplete((MessageId id, Throwable t) -> {
+                    if (t != null) {
+                        log.error("Failed to send Pulsar message", t);
+                        //Let's close everything and restart
+                        close(true);
+                    }
+                    else {
+                        this.lastMsgTimestamp = System.currentTimeMillis();
+                        inFlightCounter.decrementAndGet();
+                    }
+                });
+
+        int inFlight = inFlightCounter.incrementAndGet();
+        if (++msgCounter % MSG_MONITORING_INTERVAL == 0) {
+            if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
+                log.error("Pulsar insert cannot keep up with the MQTT feed! In flight: {}", inFlight);
+            } else {
+                log.info("Currently messages in flight: {}", inFlight);
+            }
+        }
     }
 
     @Override
@@ -97,35 +154,12 @@ public class MessageProcessor implements IMqttMessageHandler {
 
                 msgBuilder.properties(properties);
 
-                msgBuilder.sendAsync()
-                        .whenComplete((MessageId id, Throwable t) -> {
-                            if (t != null) {
-                                log.error("Failed to send Pulsar message", t);
-                                //Let's close everything and restart
-                                close(true);
-                            }
-                            else {
-                                this.lastMsgTimestamp = System.currentTimeMillis();
-                                inFlightCounter.decrementAndGet();
-                            }
-                        });
-
-                int inFlight = inFlightCounter.incrementAndGet();
-                if (++msgCounter % MSG_MONITORING_INTERVAL == 0) {
-                    if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
-                        log.error("Pulsar insert cannot keep up with the MQTT feed! In flight: {}", inFlight);
-                    }
-                    else {
-                        log.info("Currently messages in flight: {}", inFlight);
-                    }
-                }
-            }
-            else {
+                messageQueue.offer(msgBuilder);
+            } else {
                 log.warn("Cannot forward Message to Pulsar because (mapped) content is null");
             }
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error while handling the message", e);
             // Let's close everything and restart.
             // Closing the MQTT connection should enable us to receive the same message again.
@@ -136,7 +170,7 @@ public class MessageProcessor implements IMqttMessageHandler {
 
     @Override
     public void connectionLost(Throwable cause) {
-        log.info("Mqtt connection lost");
+        log.warn("MQTT connection lost", cause);
         close(false);
     }
 
@@ -162,7 +196,7 @@ public class MessageProcessor implements IMqttMessageHandler {
         if (connector != null) {
             boolean mqttConnected = connector.isMqttConnected();
             if (!mqttConnected) {
-                log.error("Health check: mqtt is not connected");
+                log.error("Health check: MQTT is not connected");
             }
             return mqttConnected;
         }
