@@ -70,8 +70,10 @@ public class MessageProcessor implements IMqttMessageHandler {
                 try {
                     sendMessageFromQueue();
                 } catch (InterruptedException e) {
-                    //This should not happen, but let's log it anyways
-                    log.warn("Thread was interrupted?", e);
+                    if (!shutdownInProgress) {
+                        //Thread should only get interrupted when the service is being shutdown
+                        log.warn("Thread {} was interrupted unexpectedly", Thread.currentThread().getName(), e);
+                    }
                 }
 
                 if (delayBetweenMessagesNs > 0) {
@@ -93,8 +95,7 @@ public class MessageProcessor implements IMqttMessageHandler {
                         log.error("Failed to send Pulsar message", t);
                         //Let's close everything and restart
                         close(true);
-                    }
-                    else {
+                    } else {
                         this.lastMsgTimestamp = System.currentTimeMillis();
                         inFlightCounter.decrementAndGet();
                     }
@@ -180,7 +181,7 @@ public class MessageProcessor implements IMqttMessageHandler {
         }
         shutdownInProgress = true;
 
-        log.warn("Closing MessageProcessor resources");
+        log.info("Closing MessageProcessor resources");
         //Let's first close the MQTT to stop the event stream.
         if (closeMqtt) {
             connector.close();
@@ -190,6 +191,8 @@ public class MessageProcessor implements IMqttMessageHandler {
         pulsarApp.close();
         log.info("Pulsar connection closed");
 
+        log.info("Interrupting {}", messageSendThread.getName());
+        messageSendThread.interrupt();
     }
 
     public boolean isMqttConnected() {
