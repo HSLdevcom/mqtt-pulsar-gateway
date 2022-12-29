@@ -129,11 +129,6 @@ public class MessageProcessor implements IMqttMessageHandler {
 
             // Current implementation uses the latter approach
 
-            if (!producer.isConnected()) {
-                log.error("Pulsar Producer is no longer connected. Exiting application");
-                close(true);
-            }
-
             long now = System.currentTimeMillis();
 
             byte[] payload = message.getPayload();
