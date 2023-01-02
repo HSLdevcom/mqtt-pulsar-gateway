@@ -4,15 +4,16 @@ import com.typesafe.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
-import java.util.Scanner;
 
 public class Credentials {
     private static final Logger log = LoggerFactory.getLogger(Credentials.class);
 
-    public String username;
-    public String password;
+    public final String username;
+    public final String password;
 
     public Credentials(String user, String pw) {
         username = user;
@@ -29,11 +30,11 @@ public class Credentials {
                 //Default path is what works with Docker out-of-the-box. Override with a local file if needed
                 final String usernamePath = config.getString("mqtt-broker.credentials.usernameFilepath");
                 log.debug("Reading username from " + usernamePath);
-                String username = new Scanner(new File(usernamePath)).useDelimiter("\\Z").next();
+                final String username = Files.readString(Path.of(usernamePath), StandardCharsets.UTF_8);
 
                 final String passwordPath = config.getString("mqtt-broker.credentials.passwordFilepath");
                 log.debug("Reading password from " + passwordPath);
-                String password = new Scanner(new File(passwordPath)).useDelimiter("\\Z").next();
+                final String password = Files.readString(Path.of(passwordPath), StandardCharsets.UTF_8);
 
                 log.info("Login credentials read from files successfully");
                 return Optional.of(new Credentials(username, password));
