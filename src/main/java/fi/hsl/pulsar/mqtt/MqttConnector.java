@@ -69,6 +69,8 @@ public class MqttConnector implements MqttCallbackExtended {
 
             log.info("Connecting to MQTT broker at {}", broker);
 
+            mqttClient = client;
+
             IMqttToken token = client.connect(connectOptions);
             token.waitForCompletion();
 
@@ -81,11 +83,10 @@ public class MqttConnector implements MqttCallbackExtended {
             if (client != null) {
                 //Paho doesn't close the connection threads unless we force-close it.
                 client.close(true);
+                mqttClient = null;
             }
             throw e;
         }
-
-        mqttClient = client;
     }
 
 
