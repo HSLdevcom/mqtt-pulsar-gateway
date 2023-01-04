@@ -12,7 +12,6 @@ import org.testcontainers.utility.DockerImageName;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -21,12 +20,12 @@ import static org.mockito.Mockito.when;
 
 public class MqttConnectorTest {
     @Rule
-    public GenericContainer mosquitto = new GenericContainer(DockerImageName.parse("eclipse-mosquitto:1.6"))
+    public GenericContainer mqttBroker = new GenericContainer(DockerImageName.parse("hivemq/hivemq4"))
             .withExposedPorts(1883);
 
     @Test
     public void testMqttConnector() throws Exception {
-        final String brokerUri = "tcp://" + mosquitto.getHost() + ":" + mosquitto.getFirstMappedPort();
+        final String brokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
 
         Config config = mock(Config.class);
         when(config.getString("mqtt-broker.topic")).thenReturn("#");
@@ -64,7 +63,7 @@ public class MqttConnectorTest {
             client.publish("test", String.valueOf(i).getBytes(StandardCharsets.UTF_8), 1, false);
         }
 
-        Thread.sleep(1000);
+        Thread.sleep(2000);
         client.disconnect();
         client.close(true);
 
