@@ -69,11 +69,11 @@ public class MessageProcessor implements IMqttMessageHandler {
             while (!Thread.interrupted()) {
                 try {
                     sendMessageFromQueue();
-                } catch (InterruptedException e) {
+
                     if (delayBetweenMessagesNs > 0) {
                         BusyWait.delay(delayBetweenMessagesNs);
                     }
-
+                } catch (InterruptedException e) {
                     log.info("{} was interrupted, stopping message processing", Thread.currentThread().getName());
                 }
             }
