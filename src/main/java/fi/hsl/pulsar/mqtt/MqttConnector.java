@@ -106,6 +106,7 @@ public class MqttConnector implements MqttCallbackExtended {
     @Override
     public void connectionLost(Throwable cause) {
         log.error("Connection lost to MQTT broker at {}, reconnecting...", broker, cause);
+        mqttClient.getDebug().dumpClientDebug();
     }
 
     @Override
