@@ -8,10 +8,7 @@ import fi.hsl.common.pulsar.PulsarApplicationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.Optional;
-import java.util.Scanner;
-import java.util.function.BooleanSupplier;
 
 public class Main {
 
@@ -30,35 +27,21 @@ public class Main {
 
             app = PulsarApplication.newInstance(config);
             PulsarApplicationContext context = app.getContext();
-            connector = new MqttConnector(config, credentials);
 
-            MessageProcessor processor = new MessageProcessor(config, app, connector);
-            //Let's subscribe to connector before connecting so we'll get all the events.
-            connector.subscribe(processor);
+            MessageProcessor processor = new MessageProcessor(config, app);
 
+            connector = new MqttConnector(config, credentials, processor);
             connector.connect();
 
             HealthServer healthServer = context.getHealthServer();
-            final BooleanSupplier mqttHealthCheck = () -> {
-                if (processor != null) {
-                    return processor.isMqttConnected();
-                }
-                return false;
-            };
-            final BooleanSupplier lastMsgSendIntervalHealthCheck = () -> {
-                if (processor != null) {
-                    return processor.isLastMsgSendIntervalHealthy();
-                }
-                return false;
-            };
             if (healthServer != null) {
-                healthServer.addCheck(mqttHealthCheck);
-                healthServer.addCheck(lastMsgSendIntervalHealthCheck);
+                healthServer.addCheck(connector::isMqttConnected);
+                healthServer.addCheck(processor::isLastMsgSendIntervalHealthy);
             }
 
             log.info("Connections established, let's process some messages");
-        }
-        catch (Exception e) {
+            processor.processMessages();
+        } catch (Exception e) {
             log.error("Exception at main", e);
             if (app != null) {
                 app.close();
@@ -66,8 +49,6 @@ public class Main {
             if (connector != null) {
                 connector.close();
             }
-
         }
-
     }
 }

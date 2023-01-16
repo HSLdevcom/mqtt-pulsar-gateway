@@ -2,11 +2,14 @@ package fi.hsl.pulsar.mqtt;
 
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-/**
- * Paho has multiple interfaces but none of them seem to support our use case of receiving events for both
- * message-arrived and client-disconnected event. So we'll wrap our own interface.
- */
+import java.util.concurrent.CompletableFuture;
+
 public interface IMqttMessageHandler {
-    void handleMessage(String topic, MqttMessage message) throws Exception;
-    void connectionLost(Throwable cause);
+    /**
+     * Handle MQTT message. Method must return a completable future that completes when the message is processed successfully or throws an exception when processing fails
+     * @param topic MQTT topic
+     * @param message MQTT message
+     * @return Completable future that completes when message is processed
+     */
+    CompletableFuture<Void> handleMessage(String topic, MqttMessage message);
 }
