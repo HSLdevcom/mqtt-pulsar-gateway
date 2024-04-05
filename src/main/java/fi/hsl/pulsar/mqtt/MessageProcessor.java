@@ -88,6 +88,7 @@ public class MessageProcessor implements IMqttMessageHandler {
 
     public void sendMessageFromQueue() throws InterruptedException {
         QueuedMessage message = messageQueue.take();
+        log.info("messageQueue size: " + messageQueue.size());
 
         message.message.sendAsync()
             //Use timeout to more quickly detect if Pulsar connection is down
@@ -114,6 +115,8 @@ public class MessageProcessor implements IMqttMessageHandler {
             } else {
                 log.info("Currently messages in flight: {}", inFlight);
             }
+        } else {
+            log.info("++msgCounter ({}) % MSG_MONITORING_INTERVAL ({}) != 0", msgCounter, MSG_MONITORING_INTERVAL);
         }
     }
 
