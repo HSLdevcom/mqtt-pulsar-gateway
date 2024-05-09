@@ -25,25 +25,21 @@ public class Credentials {
             if (!config.getBoolean("mqtt-broker.credentials.required")) {
                 log.info("Login credentials not required");
                 return Optional.empty();
-            }
-            else {
-                //Default path is what works with Docker out-of-the-box. Override with a local file if needed
-                final String usernamePath = config.getString("mqtt-broker.credentials.usernameFilepath");
-                log.debug("Reading username from " + usernamePath);
-                final String username = Files.readString(Path.of(usernamePath), StandardCharsets.UTF_8);
+            } else {
+                String username = System.getenv("MQTT_BROKER_USERNAME");
+                String password = System.getenv("MQTT_BROKER_PASSWORD");
 
-                final String passwordPath = config.getString("mqtt-broker.credentials.passwordFilepath");
-                log.debug("Reading password from " + passwordPath);
-                final String password = Files.readString(Path.of(passwordPath), StandardCharsets.UTF_8);
+                if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
+                    log.error("Invalid login credentials");
+                    throw new IllegalArgumentException("Invalid MQTT login credentials");
+                }
 
-                log.info("Login credentials read from files successfully");
+                log.info("Login credentials read from environment variables successfully");
                 return Optional.of(new Credentials(username, password));
             }
         } catch (Exception e) {
-            log.error("Failed to read login credentials from secret files", e);
+            log.error("Failed to read login credentials from environment variables", e);
             throw e;
         }
     }
-
-
 }
