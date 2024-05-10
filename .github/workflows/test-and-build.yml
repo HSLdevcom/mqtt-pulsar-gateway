@@ -78,3 +78,4 @@ jobs:
           name: hsldevcom/mqtt-pulsar-gateway
           username: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
           password: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
+          tags: aks-dev
