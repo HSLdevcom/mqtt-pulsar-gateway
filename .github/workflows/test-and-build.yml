@@ -66,9 +66,9 @@ jobs:
     # Run only on aks-dev branch
     if: github.ref == 'refs/heads/aks-dev'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download .jar file
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: mqtt-pulsar-gateway-jar-with-dependencies.jar
           path: target
@@ -84,9 +84,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/aks-prod'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v23
       - name: Download .jar file
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: mqtt-pulsar-gateway-jar-with-dependencies.jar
           path: target
