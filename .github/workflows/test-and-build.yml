@@ -66,7 +66,7 @@ jobs:
     # Run only on aks-dev branch
     if: github.ref == 'refs/heads/aks-dev'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
@@ -79,3 +79,21 @@ jobs:
           username: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
           password: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
           tags: aks-dev
+  build-aks-prod-docker-image:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/aks-prod'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download .jar file
+        uses: actions/download-artifact@v4
+        with:
+          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          path: target
+      - name: Build and publish aks-prod Docker image
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: hsldevcom/mqtt-pulsar-gateway
+          username: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
+          password: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
+          tags: aks-prod
