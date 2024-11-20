@@ -18,7 +18,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload .jar file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: mqtt-pulsar-gateway-jar-with-dependencies.jar
           path: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download .jar file
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mqtt-pulsar-gateway-jar-with-dependencies.jar
           path: target
@@ -49,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download .jar file
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: mqtt-pulsar-gateway-jar-with-dependencies.jar
           path: target
@@ -60,3 +60,40 @@ jobs:
           username: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
           password: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
           tag_semver: true
+  build-aks-dev-docker-image:
+    needs: test
+    runs-on: ubuntu-latest
+    # Run only on aks-dev branch
+    if: github.ref == 'refs/heads/aks-dev'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download .jar file
+        uses: actions/download-artifact@v4
+        with:
+          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          path: target
+      - name: Build and publish aks-dev Docker image
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: hsldevcom/mqtt-pulsar-gateway
+          username: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
+          password: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
+          tags: aks-dev
+  build-aks-prod-docker-image:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/aks-prod'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download .jar file
+        uses: actions/download-artifact@v4
+        with:
+          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          path: target
+      - name: Build and publish aks-prod Docker image
+        uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          name: hsldevcom/mqtt-pulsar-gateway
+          username: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
+          password: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
+          tags: aks-prod
