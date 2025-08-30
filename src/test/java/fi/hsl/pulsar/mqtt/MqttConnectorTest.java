@@ -1,6 +1,14 @@
 package fi.hsl.pulsar.mqtt;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.typesafe.config.Config;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
@@ -9,23 +17,15 @@ import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class MqttConnectorTest {
     @Rule
-    public GenericContainer mqttBroker = new GenericContainer(DockerImageName.parse("hivemq/hivemq4"))
-            .withExposedPorts(1883);
+    public GenericContainer mqttBroker =
+            new GenericContainer(DockerImageName.parse("hivemq/hivemq4")).withExposedPorts(1883);
 
     @Test
     public void testMqttConnector() throws Exception {
-        final String brokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
+        final String brokerUri =
+                "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
 
         Config config = mock(Config.class);
         when(config.getString("mqtt-broker.topic")).thenReturn("#");
@@ -40,23 +40,30 @@ public class MqttConnectorTest {
 
         final AtomicInteger messageCounter = new AtomicInteger(0);
 
-        final MqttConnector mqttConnector = new MqttConnector(config, Optional.empty(), new IMqttMessageHandler() {
-            @Override
-            public CompletableFuture<Void> handleMessage(String topic, MqttMessage message) {
-                return CompletableFuture.runAsync(() -> {
-                    try {
-                        Thread.sleep(500);
+        final MqttConnector mqttConnector =
+                new MqttConnector(
+                        config,
+                        Optional.empty(),
+                        new IMqttMessageHandler() {
+                            @Override
+                            public CompletableFuture<Void> handleMessage(
+                                    String topic, MqttMessage message) {
+                                return CompletableFuture.runAsync(
+                                        () -> {
+                                            try {
+                                                Thread.sleep(500);
 
-                        messageCounter.incrementAndGet();
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-            }
-        });
+                                                messageCounter.incrementAndGet();
+                                            } catch (InterruptedException e) {
+                                                throw new RuntimeException(e);
+                                            }
+                                        });
+                            }
+                        });
         mqttConnector.connect();
 
-        MqttClient client = new MqttClient(brokerUri, MqttClient.generateClientId(), new MemoryPersistence());
+        MqttClient client =
+                new MqttClient(brokerUri, MqttClient.generateClientId(), new MemoryPersistence());
         client.connect();
 
         for (int i = 0; i < 5; i++) {

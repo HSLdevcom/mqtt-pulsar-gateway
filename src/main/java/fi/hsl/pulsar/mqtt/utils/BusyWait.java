@@ -5,6 +5,7 @@ public class BusyWait {
 
     public static void delay(long ns) {
         final long start = System.nanoTime();
-        while(System.nanoTime() - start < ns);
+        while (System.nanoTime() - start < ns)
+            ;
     }
 }
