@@ -126,6 +126,7 @@
                     <java>
                         <googleJavaFormat>
                             <version>${googleJavaFormat.version}</version>
+                            <style>AOSP</style>
                         </googleJavaFormat>
                     </java>
                 </configuration>
