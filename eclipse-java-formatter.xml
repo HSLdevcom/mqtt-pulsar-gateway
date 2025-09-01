@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profiles version="13">
+    <profile kind="CodeFormatterProfile" name="Custom-4spaces-NoCommentSplit" version="13">
+
+        <setting id="org.eclipse.jdt.core.formatter.tabulation.char" value="space"/>
+        <setting id="org.eclipse.jdt.core.formatter.tabulation.size" value="4"/>
+        <setting id="org.eclipse.jdt.core.formatter.indentation.size" value="4"/>
+        <setting id="org.eclipse.jdt.core.formatter.use_tabs_only_for_leading_indentations" value="false"/>
+
+        <setting id="org.eclipse.jdt.core.formatter.lineSplit" value="120"/>
+
+        <setting id="org.eclipse.jdt.core.formatter.comment.line_length" value="9999"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_line_comments" value="false"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_block_comments" value="false"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_javadoc_comments" value="false"/>
+
+    </profile>
+</profiles>

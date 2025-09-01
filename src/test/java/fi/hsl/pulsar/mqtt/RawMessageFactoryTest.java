@@ -38,8 +38,7 @@ public class RawMessageFactoryTest {
         Map<String, String> props = new RawMessageFactory().properties();
         assertEquals(2, props.size());
         assertEquals(props.get(TransitdataProperties.KEY_SCHEMA_VERSION), "1");
-        assertEquals(
-                props.get(TransitdataProperties.KEY_PROTOBUF_SCHEMA),
+        assertEquals(props.get(TransitdataProperties.KEY_PROTOBUF_SCHEMA),
                 TransitdataProperties.ProtobufSchema.MqttRawMessage.toString());
     }
 
