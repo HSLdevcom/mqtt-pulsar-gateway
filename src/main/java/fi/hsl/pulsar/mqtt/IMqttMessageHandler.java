@@ -5,9 +5,8 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public interface IMqttMessageHandler {
     /**
-     * Handle MQTT message. Method must return a completable future that completes
-     * when the message is processed successfully or throws an exception when
-     * processing fails
+     * Handle MQTT message. Method must return a completable future that completes when the message is processed
+     * successfully or throws an exception when processing fails
      *
      * @param topic MQTT topic
      * @param message MQTT message
