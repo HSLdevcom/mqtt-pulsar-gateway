@@ -14,11 +14,9 @@ public class RawMessageFactory implements IMapperFactory {
 
     static {
         HashMap<String, String> props = new HashMap<>();
-        props.put(
-                TransitdataProperties.KEY_PROTOBUF_SCHEMA,
+        props.put(TransitdataProperties.KEY_PROTOBUF_SCHEMA,
                 TransitdataProperties.ProtobufSchema.MqttRawMessage.toString());
-        props.put(
-                TransitdataProperties.KEY_SCHEMA_VERSION,
+        props.put(TransitdataProperties.KEY_SCHEMA_VERSION,
                 Integer.toString(Mqtt.RawMessage.newBuilder().getSchemaVersion()));
         properties = Collections.unmodifiableMap(props);
     }
@@ -28,11 +26,8 @@ public class RawMessageFactory implements IMapperFactory {
         return (topic, payload) -> {
             Mqtt.RawMessage.Builder builder = Mqtt.RawMessage.newBuilder();
 
-            Mqtt.RawMessage raw =
-                    builder.setSchemaVersion(builder.getSchemaVersion())
-                            .setTopic(topic)
-                            .setPayload(ByteString.copyFrom(payload))
-                            .build();
+            Mqtt.RawMessage raw = builder.setSchemaVersion(builder.getSchemaVersion()).setTopic(topic)
+                    .setPayload(ByteString.copyFrom(payload)).build();
 
             return raw.toByteArray();
         };

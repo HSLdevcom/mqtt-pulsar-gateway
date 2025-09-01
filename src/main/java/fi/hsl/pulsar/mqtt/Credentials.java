@@ -25,10 +25,7 @@ public class Credentials {
                 String username = System.getenv("MQTT_BROKER_USERNAME");
                 String password = System.getenv("MQTT_BROKER_PASSWORD");
 
-                if (username == null
-                        || username.isEmpty()
-                        || password == null
-                        || password.isEmpty()) {
+                if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
                     log.error("Invalid login credentials");
                     throw new IllegalArgumentException("Invalid MQTT login credentials");
                 }

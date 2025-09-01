@@ -124,10 +124,9 @@
                 <version>${spotlessMavenPlugin.version}</version>
                 <configuration>
                     <java>
-                        <googleJavaFormat>
-                            <version>${googleJavaFormat.version}</version>
-                            <style>AOSP</style>
-                        </googleJavaFormat>
+                        <eclipse>
+                            <file>${project.basedir}/eclipse-java-formatter.xml</file>
+                        </eclipse>
                     </java>
                 </configuration>
                 <executions>

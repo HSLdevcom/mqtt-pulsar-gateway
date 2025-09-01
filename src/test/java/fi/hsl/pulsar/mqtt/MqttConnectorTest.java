@@ -19,13 +19,12 @@ import org.testcontainers.utility.DockerImageName;
 
 public class MqttConnectorTest {
     @Rule
-    public GenericContainer mqttBroker =
-            new GenericContainer(DockerImageName.parse("hivemq/hivemq4")).withExposedPorts(1883);
+    public GenericContainer mqttBroker = new GenericContainer(DockerImageName.parse("hivemq/hivemq4"))
+            .withExposedPorts(1883);
 
     @Test
     public void testMqttConnector() throws Exception {
-        final String brokerUri =
-                "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
+        final String brokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
 
         Config config = mock(Config.class);
         when(config.getString("mqtt-broker.topic")).thenReturn("#");
@@ -40,30 +39,23 @@ public class MqttConnectorTest {
 
         final AtomicInteger messageCounter = new AtomicInteger(0);
 
-        final MqttConnector mqttConnector =
-                new MqttConnector(
-                        config,
-                        Optional.empty(),
-                        new IMqttMessageHandler() {
-                            @Override
-                            public CompletableFuture<Void> handleMessage(
-                                    String topic, MqttMessage message) {
-                                return CompletableFuture.runAsync(
-                                        () -> {
-                                            try {
-                                                Thread.sleep(500);
+        final MqttConnector mqttConnector = new MqttConnector(config, Optional.empty(), new IMqttMessageHandler() {
+            @Override
+            public CompletableFuture<Void> handleMessage(String topic, MqttMessage message) {
+                return CompletableFuture.runAsync(() -> {
+                    try {
+                        Thread.sleep(500);
 
-                                                messageCounter.incrementAndGet();
-                                            } catch (InterruptedException e) {
-                                                throw new RuntimeException(e);
-                                            }
-                                        });
-                            }
-                        });
+                        messageCounter.incrementAndGet();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        });
         mqttConnector.connect();
 
-        MqttClient client =
-                new MqttClient(brokerUri, MqttClient.generateClientId(), new MemoryPersistence());
+        MqttClient client = new MqttClient(brokerUri, MqttClient.generateClientId(), new MemoryPersistence());
         client.connect();
 
         for (int i = 0; i < 5; i++) {
