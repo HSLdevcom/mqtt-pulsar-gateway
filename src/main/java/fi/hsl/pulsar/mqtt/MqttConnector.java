@@ -1,13 +1,12 @@
 package fi.hsl.pulsar.mqtt;
 
 import com.typesafe.config.Config;
+import java.util.Optional;
+import java.util.UUID;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
-import java.util.UUID;
 
 public class MqttConnector implements MqttCallbackExtended {
     private static final Logger log = LoggerFactory.getLogger(MqttConnector.class);
@@ -37,7 +36,7 @@ public class MqttConnector implements MqttCallbackExtended {
         this.messageHandler = messageHandler;
 
         connectOptions = new MqttConnectOptions();
-        connectOptions.setCleanSession(cleanSession); //This should be false for persistent subscription
+        connectOptions.setCleanSession(cleanSession); // This should be false for persistent subscription
         connectOptions.setMaxInflight(maxInFlight);
         connectOptions.setAutomaticReconnect(true);
         connectOptions.setKeepAliveInterval(keepAliveInterval);
@@ -51,7 +50,7 @@ public class MqttConnector implements MqttCallbackExtended {
 
     private static String createClientId(Config config) {
         String clientId = config.getString("mqtt-broker.clientId");
-        if (config.getBoolean("mqtt-broker.addRandomnessToClientId")) { //This prevents persistent delivery of messages
+        if (config.getBoolean("mqtt-broker.addRandomnessToClientId")) { // This prevents persistent delivery of messages
             log.info("Creating random client ID for MQTT subscription");
             clientId += "-" + UUID.randomUUID().toString().substring(0, 8);
         }
@@ -62,10 +61,10 @@ public class MqttConnector implements MqttCallbackExtended {
     public void connect() throws Exception {
         MqttAsyncClient client = null;
         try {
-            //Let's use memory persistance to optimize throughput
+            // Let's use memory persistance to optimize throughput
             client = new MqttAsyncClient(broker, clientId, new MemoryPersistence());
             client.setManualAcks(manualAck);
-            client.setCallback(this); //Let's add the callback before connecting so we won't lose any messages
+            client.setCallback(this); // Let's add the callback before connecting so we won't lose any messages
 
             log.info("Connecting to MQTT broker at {}", broker);
 
@@ -81,14 +80,13 @@ public class MqttConnector implements MqttCallbackExtended {
         } catch (Exception e) {
             log.error("Error connecting to MQTT broker", e);
             if (client != null) {
-                //Paho doesn't close the connection threads unless we force-close it.
+                // Paho doesn't close the connection threads unless we force-close it.
                 client.close(true);
                 mqttClient = null;
             }
             throw e;
         }
     }
-
 
     @Override
     public void connectComplete(boolean reconnect, String brokerUri) {
@@ -128,7 +126,8 @@ public class MqttConnector implements MqttCallbackExtended {
     }
 
     @Override
-    public void deliveryComplete(IMqttDeliveryToken token) {}
+    public void deliveryComplete(IMqttDeliveryToken token) {
+    }
 
     public void close() {
         if (mqttClient == null) {
@@ -138,7 +137,7 @@ public class MqttConnector implements MqttCallbackExtended {
 
         try {
             log.info("Closing MqttConnector resources");
-            //Paho doesn't close the connection threads unless we first disconnect and then force-close it.
+            // Paho doesn't close the connection threads unless we first disconnect and then force-close it.
             mqttClient.disconnectForcibly(1000L, 1000L);
             mqttClient.close(true);
             mqttClient = null;

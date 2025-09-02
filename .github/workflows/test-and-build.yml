@@ -13,6 +13,12 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
           cache: 'maven'
+
+      - name: Run Spotless Apply
+        run: mvn spotless:apply
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build with Maven
         run: mvn --file pom.xml clean install
         env:

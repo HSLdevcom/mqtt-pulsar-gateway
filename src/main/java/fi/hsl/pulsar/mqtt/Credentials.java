@@ -1,13 +1,9 @@
 package fi.hsl.pulsar.mqtt;
 
 import com.typesafe.config.Config;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Optional;
 
 public class Credentials {
     private static final Logger log = LoggerFactory.getLogger(Credentials.class);
