@@ -2,13 +2,13 @@ package fi.hsl.pulsar.mqtt;
 
 import com.typesafe.config.Config;
 import fi.hsl.common.pulsar.PulsarApplication;
-
 import fi.hsl.common.transitdata.TransitdataProperties;
 import fi.hsl.pulsar.mqtt.utils.BusyWait;
+import fi.hsl.pulsar.mqtt.utils.LogUtils;
 import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.TypedMessageBuilder;
-import org.eclipse.paho.client.mqttv3.*;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +112,10 @@ public class MessageProcessor implements IMqttMessageHandler {
             if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
                 log.error("Pulsar insert cannot keep up with the MQTT feed! In flight: {}", inFlight);
             } else {
-                log.info("Currently messages in flight: {}", inFlight);
+                Map<String, String> logFields = Map.of(
+                        "inFlightCount", String.valueOf(inFlight)
+                );
+                LogUtils.withFields(logFields, () -> log.info("In flight messages count"));
             }
         }
     }
