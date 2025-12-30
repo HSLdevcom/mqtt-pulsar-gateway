@@ -113,9 +113,7 @@ public class MessageProcessor implements IMqttMessageHandler {
             if (inFlight < 0 || inFlight > IN_FLIGHT_ALERT_THRESHOLD) {
                 log.error("Pulsar insert cannot keep up with the MQTT feed! In flight: {}", inFlight);
             } else {
-                Map<String, String> logFields = Map.of(
-                        "inFlightCount", String.valueOf(inFlight)
-                );
+                Map<String, String> logFields = Map.of("inFlightCount", String.valueOf(inFlight));
                 LogUtils.withFields(logFields, () -> log.info("In flight messages count"));
             }
         }
