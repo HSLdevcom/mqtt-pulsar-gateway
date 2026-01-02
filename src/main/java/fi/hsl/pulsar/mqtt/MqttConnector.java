@@ -7,7 +7,9 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+@Component
 public class MqttConnector implements MqttCallbackExtended {
     private static final Logger log = LoggerFactory.getLogger(MqttConnector.class);
 
@@ -22,30 +24,15 @@ public class MqttConnector implements MqttCallbackExtended {
     private final MqttConnectOptions connectOptions;
     private MqttAsyncClient mqttClient;
 
-    public MqttConnector(Config config, Optional<Credentials> maybeCredentials, IMqttMessageHandler messageHandler) {
+    public MqttConnector(Config config, MqttConnectOptions mqttConnectOptions, IMqttMessageHandler messageHandler) {
         mqttTopic = config.getString("mqtt-broker.topic");
         qos = config.getInt("mqtt-broker.qos");
         clientId = createClientId(config);
         broker = config.getString("mqtt-broker.host");
         manualAck = config.getBoolean("mqtt-broker.manualAck");
 
-        final int maxInFlight = config.getInt("mqtt-broker.maxInflight");
-        final boolean cleanSession = config.getBoolean("mqtt-broker.cleanSession");
-        final int keepAliveInterval = config.getInt("mqtt-broker.keepAliveInterval");
-
         this.messageHandler = messageHandler;
-
-        connectOptions = new MqttConnectOptions();
-        connectOptions.setCleanSession(cleanSession); // This should be false for persistent subscription
-        connectOptions.setMaxInflight(maxInFlight);
-        connectOptions.setAutomaticReconnect(true);
-        connectOptions.setKeepAliveInterval(keepAliveInterval);
-
-        maybeCredentials.ifPresent(credentials -> {
-            connectOptions.setUserName(credentials.username);
-            connectOptions.setPassword(credentials.password.toCharArray());
-        });
-        connectOptions.setConnectionTimeout(10);
+        this.connectOptions = mqttConnectOptions;
     }
 
     private static String createClientId(Config config) {

@@ -8,7 +8,9 @@ import fi.hsl.common.pulsar.PulsarApplicationContext;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+@SpringBootApplication
 public class Main {
 
     private static final Logger log = LoggerFactory.getLogger(Main.class);
@@ -19,17 +21,17 @@ public class Main {
         MqttConnector connector = null;
         PulsarApplication app = null;
         try {
-            Config config = ConfigParser.createConfig();
-            Optional<Credentials> credentials = Credentials.readMqttCredentials(config);
+            //Config config = ConfigParser.createConfig();
+            //Optional<Credentials> credentials = Credentials.readMqttCredentials(config);
 
             log.info("Configurations read, connecting.");
 
-            app = PulsarApplication.newInstance(config);
+            //app = PulsarApplication.newInstance(config);
             PulsarApplicationContext context = app.getContext();
 
-            MessageProcessor processor = new MessageProcessor(config, app);
+            //MessageProcessor processor = new MessageProcessor(config, app);
 
-            connector = new MqttConnector(config, credentials, processor);
+            //connector = new MqttConnector(config, credentials, processor);
             connector.connect();
 
             HealthServer healthServer = context.getHealthServer();
