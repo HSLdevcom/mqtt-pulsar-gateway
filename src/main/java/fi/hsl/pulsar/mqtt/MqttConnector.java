@@ -112,8 +112,7 @@ public class MqttConnector implements MqttCallbackExtended {
     public void messageArrived(String topic, MqttMessage message) {
         messageHandler.handleMessage(topic, message).whenComplete((res, err) -> {
             if (err != null) {
-                log.error("Failed to handle message, exiting application...");
-                close();
+                log.error("Failed to handle message due to error: ", err);
             } else if (manualAck) {
                 try {
                     mqttClient.messageArrivedComplete(message.getId(), message.getQos());
