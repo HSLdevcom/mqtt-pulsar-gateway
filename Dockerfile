@@ -3,7 +3,7 @@
 # ============================
 # Test stage
 # ============================
-FROM hsldevcom/infodevops-docker-base-images:1.0.1-25-java AS test
+FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS test
 
 WORKDIR /usr/app
 
@@ -25,7 +25,7 @@ RUN --mount=type=secret,id=github_token \
 # ============================
 # Build stage
 # ============================
-FROM hsldevcom/infodevops-docker-base-images:1.0.1-25-java AS build
+FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS build
 
 WORKDIR /usr/app
 
@@ -41,7 +41,7 @@ RUN --mount=type=secret,id=github_token \
 # ============================
 # Runtime stage
 # ============================
-FROM hsldevcom/infodevops-docker-base-images:1.0.1-25-java
+FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jre
 
 WORKDIR /usr/app
 
