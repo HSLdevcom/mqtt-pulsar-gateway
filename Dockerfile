@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.6
+
 # ============================
 # Test stage
 # ============================
@@ -8,11 +10,17 @@ WORKDIR /usr/app
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
 
-RUN ./mvnw -B -q dependency:go-offline
+COPY .mvn/settings.xml /root/.m2/settings.xml
+
+RUN --mount=type=secret,id=github_token \
+    export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    ./mvnw -B -q dependency:go-offline
 
 COPY src src
 
-RUN ./mvnw -B test
+RUN --mount=type=secret,id=github_token \
+    export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    ./mvnw -B test
 
 # ============================
 # Build stage
@@ -23,9 +31,12 @@ WORKDIR /usr/app
 
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
+COPY .mvn/settings.xml /root/.m2/settings.xml
 COPY src src
 
-RUN ./mvnw -B package -DskipTests
+RUN --mount=type=secret,id=github_token \
+    export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    ./mvnw -B package -DskipTests
 
 # ============================
 # Runtime stage
