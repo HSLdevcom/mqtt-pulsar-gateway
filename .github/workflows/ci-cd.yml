@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@1.0.2
+    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@issue/73261-enforce-running-tests-inside-docker-container
     secrets:
       DOCKER_USERNAME: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
       DOCKER_PASSWORD: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
@@ -12,6 +12,8 @@ jobs:
       uploadJarArtifact: true
       jarArtifactName: mqtt-pulsar-gateway-jar-with-dependencies.jar
       jarArtifactPath: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
+      workingDirectory: .
+      runTestsInsideDocker: true
 
   build-develop-docker-image:
     needs: build
