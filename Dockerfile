@@ -14,12 +14,14 @@ COPY .mvn/settings.xml /root/.m2/settings.xml
 
 RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    export GITHUB_ACTOR="github-actions" && \
     ./mvnw -B -q dependency:go-offline
 
 COPY src src
 
 RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    export GITHUB_ACTOR="github-actions" && \
     ./mvnw -B test
 
 # ============================
@@ -36,6 +38,7 @@ COPY src src
 
 RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    export GITHUB_ACTOR="github-actions" && \
     ./mvnw -B package -DskipTests
 
 # ============================
