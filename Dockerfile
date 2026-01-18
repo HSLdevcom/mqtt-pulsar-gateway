@@ -1,8 +1,54 @@
-FROM eclipse-temurin:11-alpine
-#Install curl for health check
-RUN apk add --no-cache curl
+# syntax=docker/dockerfile:1.6
 
-ADD target/mqtt-pulsar-gateway-jar-with-dependencies.jar /usr/app/mqtt-pulsar-gateway.jar
+# ============================
+# Test stage
+# ============================
+FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS test
+
+WORKDIR /usr/app
+
+COPY mvnw pom.xml ./
+COPY .mvn .mvn
+
+COPY .mvn/settings.xml /root/.m2/settings.xml
+
+RUN --mount=type=secret,id=github_token \
+    export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    export GITHUB_ACTOR="github-actions" && \
+    ./mvnw -B -q dependency:go-offline
+
+COPY src src
+
+RUN --mount=type=secret,id=github_token \
+    export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    export GITHUB_ACTOR="github-actions" && \
+    ./mvnw -B test
+
+# ============================
+# Build stage
+# ============================
+FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS build
+
+WORKDIR /usr/app
+
+COPY mvnw pom.xml ./
+COPY .mvn .mvn
+COPY .mvn/settings.xml /root/.m2/settings.xml
+COPY src src
+
+RUN --mount=type=secret,id=github_token \
+    export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
+    export GITHUB_ACTOR="github-actions" && \
+    ./mvnw -B package -DskipTests
+
+# ============================
+# Runtime stage
+# ============================
+FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jre
+
+WORKDIR /usr/app
+
+COPY --from=build /usr/app/target/mqtt-pulsar-gateway-jar-with-dependencies.jar mqtt-pulsar-gateway.jar
 
 COPY start-application.sh /
 RUN chmod +x /start-application.sh
