@@ -25,15 +25,13 @@ public class MqttInboundHandler {
 
         MqttMessage mqttMessage = (MqttMessage) message.getPayload();
 
-        mqttMessageHandler.handleMessage(topic, mqttMessage)
-                .whenComplete((res, err) -> {
-                    if (err != null) {
-                        throw new RuntimeException(err);
-                    }
+        mqttMessageHandler.handleMessage(topic, mqttMessage).whenComplete((res, err) -> {
+            if (err != null) {
+                throw new RuntimeException(err);
+            }
 
-                    Objects.requireNonNull(StaticMessageHeaderAccessor.getAcknowledgment(message)).acknowledge();
-                });
-
+            Objects.requireNonNull(StaticMessageHeaderAccessor.getAcknowledgment(message)).acknowledge();
+        });
 
     }
 }

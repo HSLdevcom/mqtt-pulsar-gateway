@@ -61,14 +61,14 @@ public class MqttConfiguration {
         return connectOptions;
     }
 
-
     @Bean
-    public IMqttMessageHandler messageHandler(Config config,  PulsarApplication pulsarApplication) {
+    public IMqttMessageHandler messageHandler(Config config, PulsarApplication pulsarApplication) {
         return new MessageProcessor(config, pulsarApplication);
     }
 
     @Bean
-    public MqttConnector mqttConnector(Config config, MqttConnectOptions connectOptions, IMqttMessageHandler messageHandler) {
+    public MqttConnector mqttConnector(Config config, MqttConnectOptions connectOptions,
+            IMqttMessageHandler messageHandler) {
         return new MqttConnector(config, connectOptions, messageHandler);
     }
 
@@ -80,18 +80,15 @@ public class MqttConfiguration {
     }
 
     @Bean
-    public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(Config config, Executor mqttExecutor, MqttPahoClientFactory mqttPahoClientFactory) {
+    public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(Config config, Executor mqttExecutor,
+            MqttPahoClientFactory mqttPahoClientFactory) {
         String clientId = createClientId(config);
 
-        final String broker =  config.getString("mqtt-broker.host");
+        final String broker = config.getString("mqtt-broker.host");
         final String topic = config.getString("mqtt-broker.topic");
 
-        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(
-                broker,
-                clientId,
-                mqttPahoClientFactory,
-                topic
-        );
+        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(broker, clientId,
+                mqttPahoClientFactory, topic);
 
         adapter.setQos(config.getInt("mqtt-broker.qos"));
         adapter.setManualAcks(config.getBoolean("mqtt-broker.manualAck"));
@@ -107,14 +104,11 @@ public class MqttConfiguration {
 
         ExponentialBackOff exponentialBackoff = new ExponentialBackOff(
                 config.getLong("mqtt-broker.retry.backOffInitialInterval"),
-                config.getDouble("mqtt-broker.retry.backOffMultiplier")
-        );
+                config.getDouble("mqtt-broker.retry.backOffMultiplier"));
         exponentialBackoff.setMaxInterval(config.getLong("mqtt-broker.retry.backOffMaxInterval"));
 
-        RetryPolicy retryPolicy = RetryPolicy.builder()
-                .maxRetries(config.getInt("mqtt-broker.retry.maxRetries"))
-                .includes(List.of(TimeoutException.class, PulsarClientException.class))
-                .build();
+        RetryPolicy retryPolicy = RetryPolicy.builder().maxRetries(config.getInt("mqtt-broker.retry.maxRetries"))
+                .includes(List.of(TimeoutException.class, PulsarClientException.class)).build();
 
         advice.setBackOff(exponentialBackoff);
         advice.setRetryPolicy(retryPolicy);
