@@ -7,6 +7,8 @@
 FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS base
 WORKDIR /usr/app
 
+ARG GITHUB_ACTOR=github-actions
+
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
 
@@ -19,14 +21,14 @@ FROM base AS test
 
 RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
-    export GITHUB_ACTOR="github-actions" && \
+    export GITHUB_ACTOR="$GITHUB_ACTOR" && \
     ./mvnw -B -q dependency:go-offline
 
 COPY src src
 
 RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
-    export GITHUB_ACTOR="github-actions" && \
+    export GITHUB_ACTOR="$GITHUB_ACTOR" && \
     ./mvnw -B test
 
 # ============================
@@ -38,7 +40,7 @@ COPY src src
 
 RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
-    export GITHUB_ACTOR="github-actions" && \
+    export GITHUB_ACTOR="$GITHUB_ACTOR" && \
     ./mvnw -B package -DskipTests
 
 # ============================
