@@ -1,16 +1,21 @@
-# syntax=docker/dockerfile:1.6
+# syntax=docker/dockerfile:1
+# check=error=true
 
 # ============================
-# Test stage
+# Base stage
 # ============================
-FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS test
-
+FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS base
 WORKDIR /usr/app
 
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
 
 COPY .mvn/settings.xml /root/.m2/settings.xml
+
+# ============================
+# Test stage
+# ============================
+FROM base AS test
 
 RUN --mount=type=secret,id=github_token \
     export GITHUB_TOKEN="$(cat /run/secrets/github_token)" && \
@@ -27,13 +32,8 @@ RUN --mount=type=secret,id=github_token \
 # ============================
 # Build stage
 # ============================
-FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS build
+FROM base AS build
 
-WORKDIR /usr/app
-
-COPY mvnw pom.xml ./
-COPY .mvn .mvn
-COPY .mvn/settings.xml /root/.m2/settings.xml
 COPY src src
 
 RUN --mount=type=secret,id=github_token \
