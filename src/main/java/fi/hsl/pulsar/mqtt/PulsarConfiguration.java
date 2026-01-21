@@ -14,9 +14,8 @@ public class PulsarConfiguration {
         return ConfigParser.createConfig();
     }
 
-    @Bean
+    @Bean(destroyMethod = "close")
     public PulsarApplication pulsarApplication(Config config) throws Exception {
         return PulsarApplication.newInstance(config);
     }
-
 }

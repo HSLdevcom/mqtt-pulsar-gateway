@@ -1,8 +1,10 @@
 package fi.hsl.pulsar.mqtt;
 
+import com.typesafe.config.Config;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.springframework.integration.StaticMessageHeaderAccessor;
 import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.pulsar.listener.Acknowledgement;
@@ -14,9 +16,12 @@ import java.util.Objects;
 public class MqttInboundHandler {
 
     private final IMqttMessageHandler mqttMessageHandler;
+    private final boolean mqttManualAck;
 
-    public MqttInboundHandler(IMqttMessageHandler mqttMessageHandler) {
+    public MqttInboundHandler(IMqttMessageHandler mqttMessageHandler,
+                              Config config) {
         this.mqttMessageHandler = mqttMessageHandler;
+        this.mqttManualAck = config.getBoolean("mqtt-broker.manualAck");
     }
 
     @ServiceActivator(inputChannel = "mqttInputChannel", adviceChain = "mqttRetryAdvice")
@@ -30,8 +35,9 @@ public class MqttInboundHandler {
                 throw new RuntimeException(err);
             }
 
-            Objects.requireNonNull(StaticMessageHeaderAccessor.getAcknowledgment(message)).acknowledge();
+            if(mqttManualAck) {
+                Objects.requireNonNull(StaticMessageHeaderAccessor.getAcknowledgment(message)).acknowledge();
+            }
         });
-
     }
 }

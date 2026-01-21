@@ -67,12 +67,6 @@ public class MqttConfiguration {
     }
 
     @Bean
-    public MqttConnector mqttConnector(Config config, MqttConnectOptions connectOptions,
-            IMqttMessageHandler messageHandler) {
-        return new MqttConnector(config, connectOptions, messageHandler);
-    }
-
-    @Bean
     public MqttPahoClientFactory mqttPahoClientFactory(MqttConnectOptions mqttConnectOptions) {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
         factory.setConnectionOptions(mqttConnectOptions);

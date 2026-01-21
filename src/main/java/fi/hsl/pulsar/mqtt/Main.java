@@ -18,21 +18,13 @@ public class Main {
     public static void main(String[] args) {
         log.info("Launching MQTT-Pulsar-Gateway");
 
-        MqttConnector connector = null;
         PulsarApplication app = null;
         try {
-            //Config config = ConfigParser.createConfig();
-            //Optional<Credentials> credentials = Credentials.readMqttCredentials(config);
 
             log.info("Configurations read, connecting.");
 
-            //app = PulsarApplication.newInstance(config);
             PulsarApplicationContext context = app.getContext();
 
-            //MessageProcessor processor = new MessageProcessor(config, app);
-
-            //connector = new MqttConnector(config, credentials, processor);
-            connector.connect();
 
             HealthServer healthServer = context.getHealthServer();
             if (healthServer != null) {
@@ -41,14 +33,10 @@ public class Main {
             }
 
             log.info("Connections established, let's process some messages");
-            processor.processMessages();
         } catch (Exception e) {
             log.error("Exception at main", e);
             if (app != null) {
                 app.close();
-            }
-            if (connector != null) {
-                connector.close();
             }
         }
     }
