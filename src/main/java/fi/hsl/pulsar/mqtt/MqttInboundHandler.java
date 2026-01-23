@@ -18,8 +18,7 @@ public class MqttInboundHandler {
     private final IMqttMessageHandler mqttMessageHandler;
     private final boolean mqttManualAck;
 
-    public MqttInboundHandler(IMqttMessageHandler mqttMessageHandler,
-                              Config config) {
+    public MqttInboundHandler(IMqttMessageHandler mqttMessageHandler, Config config) {
         this.mqttMessageHandler = mqttMessageHandler;
         this.mqttManualAck = config.getBoolean("mqtt-broker.manualAck");
     }
@@ -35,7 +34,7 @@ public class MqttInboundHandler {
                 throw new RuntimeException(err);
             }
 
-            if(mqttManualAck) {
+            if (mqttManualAck) {
                 Objects.requireNonNull(StaticMessageHeaderAccessor.getAcknowledgment(message)).acknowledge();
             }
         });

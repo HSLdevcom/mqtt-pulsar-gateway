@@ -1,11 +1,5 @@
 package fi.hsl.pulsar.mqtt;
 
-import com.typesafe.config.Config;
-import fi.hsl.common.config.ConfigParser;
-import fi.hsl.common.health.HealthServer;
-import fi.hsl.common.pulsar.PulsarApplication;
-import fi.hsl.common.pulsar.PulsarApplicationContext;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,27 +11,5 @@ public class Main {
 
     public static void main(String[] args) {
         log.info("Launching MQTT-Pulsar-Gateway");
-
-        PulsarApplication app = null;
-        try {
-
-            log.info("Configurations read, connecting.");
-
-            PulsarApplicationContext context = app.getContext();
-
-
-            HealthServer healthServer = context.getHealthServer();
-            if (healthServer != null) {
-                healthServer.addCheck(connector::isMqttConnected);
-                healthServer.addCheck(processor::isLastMsgSendIntervalHealthy);
-            }
-
-            log.info("Connections established, let's process some messages");
-        } catch (Exception e) {
-            log.error("Exception at main", e);
-            if (app != null) {
-                app.close();
-            }
-        }
     }
 }
