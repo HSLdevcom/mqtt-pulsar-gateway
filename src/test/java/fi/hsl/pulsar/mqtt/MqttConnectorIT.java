@@ -1,14 +1,11 @@
 package fi.hsl.pulsar.mqtt;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.typesafe.config.Config;
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,10 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.messaging.Message;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
@@ -99,18 +93,12 @@ public class MqttConnectorIT {
             return new Object() {
                 @ServiceActivator(inputChannel = "mqttInputChannel")
                 public void handle(Message<?> message) {
-                    // Spring Integration MQTT payload is a Paho MqttMessage by default
                     MqttMessage mqttMessage = (MqttMessage) message.getPayload();
 
-                    // Optional: topic is in header
                     String topic = (String) message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC);
 
                     counter.incrementAndGet();
                     latch.countDown();
-
-                    // If your production design uses manual acks, your real handler should ACK after success.
-                    // For this test, you can omit ACK if your adapter is configured with manualAck=false,
-                    // or keep manualAck=true and ensure your production handler ACKs.
                 }
             };
         }
