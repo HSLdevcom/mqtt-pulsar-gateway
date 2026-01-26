@@ -26,9 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
-@SpringBootTest(classes = {
-    MqttConnectorIT.TestHandlerConfig.class
-})
+@SpringBootTest(classes = {MqttConnectorIT.TestHandlerConfig.class})
 public class MqttConnectorIT {
 
     @Rule
@@ -38,10 +36,10 @@ public class MqttConnectorIT {
     static final AtomicInteger counter = new AtomicInteger();
     static final CountDownLatch latch = new CountDownLatch(5);
 
-/*    @DynamicPropertySource
+    /*    @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
         final String brokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
-
+    
         // These must match your @ConfigurationProperties keys (adapt as needed)
         registry.add("mqtt-broker.topic", () -> "#");
         registry.add("mqtt-broker.qos", () -> 1);
@@ -104,10 +102,10 @@ public class MqttConnectorIT {
         }
     }
 
-/*    @Test
+    /*    @Test
     public void testMqttConnector() throws Exception {
         final String brokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
-
+    
         Config config = mock(Config.class);
         when(config.getString("mqtt-broker.topic")).thenReturn("#");
         when(config.getInt("mqtt-broker.qos")).thenReturn(1);
@@ -118,16 +116,16 @@ public class MqttConnectorIT {
         when(config.getInt("mqtt-broker.keepAliveInterval")).thenReturn(30);
         when(config.getString("mqtt-broker.clientId")).thenReturn("test_client");
         when(config.getBoolean("mqtt-broker.addRandomnessToClientId")).thenReturn(true);
-
+    
         final AtomicInteger messageCounter = new AtomicInteger(0);
-
+    
         final MqttConnector mqttConnector = new MqttConnector(config, Optional.empty(), new IMqttMessageHandler() {
             @Override
             public CompletableFuture<Void> handleMessage(String topic, MqttMessage message) {
                 return CompletableFuture.runAsync(() -> {
                     try {
                         Thread.sleep(500);
-
+    
                         messageCounter.incrementAndGet();
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
@@ -136,18 +134,18 @@ public class MqttConnectorIT {
             }
         });
         mqttConnector.connect();
-
+    
         MqttClient client = new MqttClient(brokerUri, MqttClient.generateClientId(), new MemoryPersistence());
         client.connect();
-
+    
         for (int i = 0; i < 5; i++) {
             client.publish("test", String.valueOf(i).getBytes(StandardCharsets.UTF_8), 1, false);
         }
-
+    
         Thread.sleep(2000);
         client.disconnect();
         client.close(true);
-
+    
         assertEquals(5, messageCounter.get());
     }*/
 }
