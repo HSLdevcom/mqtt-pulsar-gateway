@@ -106,10 +106,11 @@ class MqttInboundHandlerIT {
 
         @Bean(name = "messageHandler")
         public IMqttMessageHandler testMessageHandler() {
-            return (topic, mqttMessage) -> CompletableFuture.runAsync(() -> {
+            return (_, _) -> {
                 counter.incrementAndGet();
                 latch.countDown();
-            });
+                return CompletableFuture.completedFuture(null);
+            };
         }
     }
 }
