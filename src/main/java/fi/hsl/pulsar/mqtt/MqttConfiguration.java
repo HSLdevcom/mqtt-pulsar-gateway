@@ -15,6 +15,7 @@ import org.springframework.integration.handler.advice.RequestHandlerRetryAdvice;
 import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
 import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
+import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.util.backoff.ExponentialBackOff;
 
@@ -83,6 +84,10 @@ public class MqttConfiguration {
 
         MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(broker, clientId,
                 mqttPahoClientFactory, topic);
+
+        DefaultPahoMessageConverter converter = new DefaultPahoMessageConverter();
+        converter.setPayloadAsBytes(true);
+        adapter.setConverter(converter);
 
         adapter.setQos(config.getInt("mqtt-broker.qos"));
         adapter.setManualAcks(config.getBoolean("mqtt-broker.manualAck"));
