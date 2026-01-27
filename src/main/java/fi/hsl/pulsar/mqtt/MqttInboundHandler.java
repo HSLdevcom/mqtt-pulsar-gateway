@@ -3,13 +3,11 @@ package fi.hsl.pulsar.mqtt;
 import com.typesafe.config.Config;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.springframework.integration.StaticMessageHeaderAccessor;
-import org.springframework.integration.acks.AcknowledgmentCallback;
+import org.springframework.integration.acks.SimpleAcknowledgment;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
-
-import java.util.Objects;
 
 @Component
 public class MqttInboundHandler {
@@ -35,9 +33,11 @@ public class MqttInboundHandler {
         mqttMessageHandler.handleMessage(topic, paho).join();
 
         if (mqttManualAck) {
-            AcknowledgmentCallback ack = StaticMessageHeaderAccessor.getAcknowledgmentCallback(message);
-            Objects.requireNonNull(ack, "Missing acknowledgmentCallback header");
-            ack.acknowledge(AcknowledgmentCallback.Status.ACCEPT);
+            SimpleAcknowledgment ack = StaticMessageHeaderAccessor.getAcknowledgment(message);
+            if (ack == null) {
+                throw new IllegalStateException("Manual ack enabled but no acknowledgment present");
+            }
+            ack.acknowledge();
         }
     }
 }
