@@ -35,8 +35,7 @@ public class MqttInboundHandler {
         mqttMessageHandler.handleMessage(topic, paho).join();
 
         if (mqttManualAck) {
-            AcknowledgmentCallback ack =
-                    StaticMessageHeaderAccessor.getAcknowledgmentCallback(message);
+            AcknowledgmentCallback ack = StaticMessageHeaderAccessor.getAcknowledgmentCallback(message);
             Objects.requireNonNull(ack, "Missing acknowledgmentCallback header");
             ack.acknowledge(AcknowledgmentCallback.Status.ACCEPT);
         }
