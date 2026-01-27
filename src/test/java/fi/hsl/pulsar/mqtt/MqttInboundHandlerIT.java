@@ -26,23 +26,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
-@SpringBootTest(
-        classes = {
-                MqttConfiguration.class,
-                MqttInboundHandler.class,
-                MqttInboundHandlerIT.TestBeans.class
-        },
-        properties = {
-                "spring.main.web-application-type=none",
-                "spring.main.allow-bean-definition-overriding=true"
-        }
-)
+@SpringBootTest(classes = {MqttConfiguration.class, MqttInboundHandler.class,
+        MqttInboundHandlerIT.TestBeans.class}, properties = {"spring.main.web-application-type=none",
+                "spring.main.allow-bean-definition-overriding=true"})
 class MqttInboundHandlerIT {
 
     @Container
-    static GenericContainer<?> mqttBroker =
-            new GenericContainer<>(DockerImageName.parse("hivemq/hivemq4"))
-                    .withExposedPorts(1883);
+    static GenericContainer<?> mqttBroker = new GenericContainer<>(DockerImageName.parse("hivemq/hivemq4"))
+            .withExposedPorts(1883);
 
     static final AtomicInteger counter = new AtomicInteger();
     static volatile CountDownLatch latch;
@@ -62,12 +53,7 @@ class MqttInboundHandlerIT {
         publisher.connect();
 
         for (int i = 0; i < 5; i++) {
-            publisher.publish(
-                    "test",
-                    String.valueOf(i).getBytes(StandardCharsets.UTF_8),
-                    1,
-                    false
-            );
+            publisher.publish("test", String.valueOf(i).getBytes(StandardCharsets.UTF_8), 1, false);
         }
 
         publisher.disconnect();
@@ -101,7 +87,7 @@ class MqttInboundHandlerIT {
                       completionTimeout = 10000
 
                       threadPool = 4
-                      
+
                       credentials {
                         required = false
                         username = ""
