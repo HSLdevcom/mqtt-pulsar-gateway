@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.integration.channel.ExecutorChannel;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.handler.advice.RequestHandlerRetryAdvice;
@@ -32,13 +33,13 @@ public class MqttConfiguration {
     private static final Logger log = LoggerFactory.getLogger(MqttConfiguration.class);
 
     @Bean
-    public MessageChannel mqttInputChannel(Executor mqttExecutor) {
-        return new ExecutorChannel(mqttExecutor);
+    public Executor mqttExecutor() {
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 
     @Bean
-    public Executor mqttExecutor(Config config) {
-        return Executors.newFixedThreadPool(config.getInt("mqtt-broker.threadPool"));
+    public MessageChannel mqttInputChannel(Executor mqttExecutor) {
+        return new ExecutorChannel(mqttExecutor);
     }
 
     @Bean
@@ -63,11 +64,6 @@ public class MqttConfiguration {
     }
 
     @Bean
-    public IMqttMessageHandler messageHandler(Config config, PulsarApplication pulsarApplication) {
-        return new MessageProcessor(config, pulsarApplication);
-    }
-
-    @Bean
     public MqttPahoClientFactory mqttPahoClientFactory(MqttConnectOptions mqttConnectOptions) {
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
         factory.setConnectionOptions(mqttConnectOptions);
@@ -75,8 +71,9 @@ public class MqttConfiguration {
     }
 
     @Bean
-    public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(Config config, Executor mqttExecutor,
-            MqttPahoClientFactory mqttPahoClientFactory) {
+    public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(Config config,
+                                                                  MqttPahoClientFactory mqttPahoClientFactory,
+                                                                  MessageChannel mqttInputChannel) {
         String clientId = createClientId(config);
 
         final String broker = config.getString("mqtt-broker.host");
@@ -91,7 +88,7 @@ public class MqttConfiguration {
 
         adapter.setQos(config.getInt("mqtt-broker.qos"));
         adapter.setManualAcks(config.getBoolean("mqtt-broker.manualAck"));
-        adapter.setOutputChannel(mqttInputChannel(mqttExecutor));
+        adapter.setOutputChannel(mqttInputChannel);
         adapter.setCompletionTimeout(config.getInt("mqtt-broker.completionTimeout"));
 
         return adapter;

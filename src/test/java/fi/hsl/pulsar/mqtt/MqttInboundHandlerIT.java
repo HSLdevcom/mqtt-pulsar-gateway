@@ -86,8 +86,6 @@ class MqttInboundHandlerIT {
                       keepAliveInterval = 30
                       completionTimeout = 10000
 
-                      threadPool = 4
-
                       credentials {
                         required = false
                         username = ""

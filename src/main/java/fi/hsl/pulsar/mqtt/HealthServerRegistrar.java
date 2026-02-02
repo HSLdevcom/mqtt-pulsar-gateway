@@ -17,16 +17,15 @@ public class HealthServerRegistrar implements SmartLifecycle {
     private final static Logger logger = LoggerFactory.getLogger(HealthServerRegistrar.class);
 
     private final HealthServer healthServer;
-    private final MessageProcessor messageProcessor;
     private final MqttPahoMessageDrivenChannelAdapter mqttAdapter;
     private final List<HealthIndicator> healthIndicators;
 
     private volatile boolean running = false;
 
-    public HealthServerRegistrar(HealthServer healthServer, IMqttMessageHandler mqttMessageHandler,
-            MqttPahoMessageDrivenChannelAdapter mqttAdapter, List<HealthIndicator> healthIndicators) {
+    public HealthServerRegistrar(HealthServer healthServer,
+            MqttPahoMessageDrivenChannelAdapter mqttAdapter,
+                                 List<HealthIndicator> healthIndicators) {
         this.healthServer = healthServer;
-        this.messageProcessor = (MessageProcessor) mqttMessageHandler;
         this.mqttAdapter = mqttAdapter;
         this.healthIndicators = healthIndicators;
     }
@@ -45,7 +44,6 @@ public class HealthServerRegistrar implements SmartLifecycle {
             }
             return mqttRunning;
         });
-        healthServer.addCheck(messageProcessor::isLastMsgSendIntervalHealthy);
 
         for (HealthIndicator healthIndicator : healthIndicators) {
             healthServer.addCheck(() -> {
