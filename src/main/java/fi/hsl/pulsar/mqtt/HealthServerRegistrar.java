@@ -22,9 +22,8 @@ public class HealthServerRegistrar implements SmartLifecycle {
 
     private volatile boolean running = false;
 
-    public HealthServerRegistrar(HealthServer healthServer,
-            MqttPahoMessageDrivenChannelAdapter mqttAdapter,
-                                 List<HealthIndicator> healthIndicators) {
+    public HealthServerRegistrar(HealthServer healthServer, MqttPahoMessageDrivenChannelAdapter mqttAdapter,
+            List<HealthIndicator> healthIndicators) {
         this.healthServer = healthServer;
         this.mqttAdapter = mqttAdapter;
         this.healthIndicators = healthIndicators;

@@ -72,8 +72,7 @@ public class MqttConfiguration {
 
     @Bean
     public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(Config config,
-                                                                  MqttPahoClientFactory mqttPahoClientFactory,
-                                                                  MessageChannel mqttInputChannel) {
+            MqttPahoClientFactory mqttPahoClientFactory, MessageChannel mqttInputChannel) {
         String clientId = createClientId(config);
 
         final String broker = config.getString("mqtt-broker.host");

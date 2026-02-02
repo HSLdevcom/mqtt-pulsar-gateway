@@ -36,11 +36,9 @@ public class MqttToPulsarFlowConfiguration {
     }
 
     @Bean
-    public IntegrationFlow mqttToPulsarFlow(Config config,
-                                            Producer<byte[]> producer,
-                                            BiFunction<String, byte[], byte[]> mapper,
-                                            Map<String, String> baseProperties,
-                                            RequestHandlerRetryAdvice mqttRetryAdvice) {
+    public IntegrationFlow mqttToPulsarFlow(Config config, Producer<byte[]> producer,
+            BiFunction<String, byte[], byte[]> mapper, Map<String, String> baseProperties,
+            RequestHandlerRetryAdvice mqttRetryAdvice) {
         boolean manualAck = config.getBoolean("mqtt-broker.manualAck");
 
         return IntegrationFlow.from("mqttInputChannel")
@@ -50,29 +48,23 @@ public class MqttToPulsarFlowConfiguration {
 
                     Map<String, Object> headers = message.getHeaders();
 
-                    producer.newMessage()
-                            .eventTime(pulsarMessage.eventTimeMs())
-                            .properties(pulsarMessage.properties())
-                            .value(pulsarMessage.payload())
-                            .sendAsync()
-                            .whenCompleteAsync((messageId, ex) -> {
+                    producer.newMessage().eventTime(pulsarMessage.eventTimeMs()).properties(pulsarMessage.properties())
+                            .value(pulsarMessage.payload()).sendAsync().whenCompleteAsync((messageId, ex) -> {
                                 if (ex == null) {
                                     AckSupport.ack(message.getHeaders());
                                 } else {
                                     exit(1);
                                 }
-                            })
-                            .orTimeout(20, TimeUnit.SECONDS)
-                            .join();
+                            }).orTimeout(20, TimeUnit.SECONDS).join();
 
-                    if(manualAck) {
+                    if (manualAck) {
                         AckSupport.ack(headers);
                     }
-                }, spec -> spec.advice(mqttRetryAdvice))
-                .get();
+                }, spec -> spec.advice(mqttRetryAdvice)).get();
     }
 
-    private static PulsarMessage pulsarMessage(Message<?> mqttMessage, BiFunction<String, byte[], byte[]> mapper, Map<String, String> baseProperties) {
+    private static PulsarMessage pulsarMessage(Message<?> mqttMessage, BiFunction<String, byte[], byte[]> mapper,
+            Map<String, String> baseProperties) {
         String topic = mqttMessage.getHeaders().get(MqttHeaders.RECEIVED_TOPIC, String.class);
         byte[] payload = (byte[]) mqttMessage.getPayload();
 
@@ -97,7 +89,8 @@ public class MqttToPulsarFlowConfiguration {
     }
 
     static final class AckSupport {
-        private AckSupport() {}
+        private AckSupport() {
+        }
 
         static void ack(Map<String, Object> headers) {
             Object ackObj = headers.get("acknowledgmentCallback");
@@ -107,7 +100,8 @@ public class MqttToPulsarFlowConfiguration {
             try {
                 ackObj.getClass().getMethod("acknowledge").invoke(ackObj);
             } catch (Exception e) {
-                throw new IllegalStateException("Failed to acknowledge MQTT message; type=" + ackObj.getClass().getName(), e);
+                throw new IllegalStateException(
+                        "Failed to acknowledge MQTT message; type=" + ackObj.getClass().getName(), e);
             }
         }
     }
