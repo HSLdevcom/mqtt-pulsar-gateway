@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 
+import static java.lang.System.exit;
+
 @Configuration
 public class MqttToPulsarFlowConfiguration {
 
@@ -53,6 +55,13 @@ public class MqttToPulsarFlowConfiguration {
                             .properties(pulsarMessage.properties())
                             .value(pulsarMessage.payload())
                             .sendAsync()
+                            .whenCompleteAsync((messageId, ex) -> {
+                                if (ex == null) {
+                                    AckSupport.ack(message.getHeaders());
+                                } else {
+                                    exit(1);
+                                }
+                            })
                             .orTimeout(20, TimeUnit.SECONDS)
                             .join();
 
@@ -61,17 +70,6 @@ public class MqttToPulsarFlowConfiguration {
                     }
                 }, spec -> spec.advice(mqttRetryAdvice))
                 .get();
-    }
-
-    private static RuntimeException unwrapToRetryable(Throwable t) {
-        Throwable c = t;
-        while (c instanceof CompletionException && c.getCause() != null) {
-            c = c.getCause();
-        }
-        if (c instanceof TimeoutException te) {
-            return new RuntimeException(te);
-        }
-        return (c instanceof RuntimeException re) ? re : new RuntimeException(c);
     }
 
     private static PulsarMessage pulsarMessage(Message<?> mqttMessage, BiFunction<String, byte[], byte[]> mapper, Map<String, String> baseProperties) {
