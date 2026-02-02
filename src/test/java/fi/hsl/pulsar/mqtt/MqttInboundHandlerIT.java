@@ -2,11 +2,15 @@ package fi.hsl.pulsar.mqtt;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import org.apache.pulsar.client.api.MessageId;
+import org.apache.pulsar.client.api.Producer;
+import org.apache.pulsar.client.api.TypedMessageBuilder;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +30,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
-@SpringBootTest(classes = {MqttConfiguration.class, MqttInboundHandler.class,
+@SpringBootTest(classes = {MqttConfiguration.class, MqttToPulsarFlowConfiguration.class,
         MqttInboundHandlerIT.TestBeans.class}, properties = {"spring.main.web-application-type=none",
                 "spring.main.allow-bean-definition-overriding=true"})
 class MqttInboundHandlerIT {
@@ -46,7 +50,7 @@ class MqttInboundHandlerIT {
 
     @Test
     @Timeout(30)
-    void consumes_messages_from_broker_and_invokes_IMqttMessageHandler() throws Exception {
+    void consumes_messages_from_broker_and_sends_to_pulsar_producer() throws Exception {
         String brokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getMappedPort(1883);
 
         MqttClient publisher = new MqttClient(brokerUri, MqttClient.generateClientId(), new MemoryPersistence());
@@ -102,13 +106,19 @@ class MqttInboundHandlerIT {
                     """.formatted(brokerUri));
         }
 
-        @Bean(name = "messageHandler")
-        public IMqttMessageHandler testMessageHandler() {
-            return (_, _) -> {
+        @Bean
+        public Producer<byte[]> pulsarProducer() {
+            TypedMessageBuilder<byte[]> builder = Mockito.mock(TypedMessageBuilder.class, Mockito.RETURNS_SELF);
+            Mockito.when(builder.sendAsync()).thenAnswer(invocation -> {
                 counter.incrementAndGet();
                 latch.countDown();
-                return CompletableFuture.completedFuture(null);
-            };
+                return CompletableFuture.completedFuture(Mockito.mock(MessageId.class));
+            });
+
+            Producer<byte[]> producer = Mockito.mock(Producer.class);
+            Mockito.when(producer.newMessage()).thenReturn(builder);
+
+            return producer;
         }
     }
 }
