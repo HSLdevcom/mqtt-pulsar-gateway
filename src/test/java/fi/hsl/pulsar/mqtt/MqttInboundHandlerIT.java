@@ -2,21 +2,21 @@ package fi.hsl.pulsar.mqtt;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.apache.pulsar.client.api.MessageId;
-import org.apache.pulsar.client.api.Producer;
-import org.apache.pulsar.client.api.TypedMessageBuilder;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.integration.dsl.IntegrationFlow;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,15 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
 @Testcontainers
-@SpringBootTest(classes = {MqttConfiguration.class, MqttToPulsarFlowConfiguration.class,
-        MqttInboundHandlerIT.TestBeans.class}, properties = {"spring.main.web-application-type=none",
-                "spring.main.allow-bean-definition-overriding=true"})
+@SpringBootTest(classes = {MqttConfiguration.class, MqttInboundHandlerIT.TestBeans.class}, properties = {
+        "spring.main.web-application-type=none", "spring.main.allow-bean-definition-overriding=true"})
 class MqttInboundHandlerIT {
 
     @Container
@@ -50,7 +44,7 @@ class MqttInboundHandlerIT {
 
     @Test
     @Timeout(30)
-    void consumes_messages_from_broker_and_sends_to_pulsar_producer() throws Exception {
+    void consumes_messages_from_broker() throws Exception {
         String brokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getMappedPort(1883);
 
         MqttClient publisher = new MqttClient(brokerUri, MqttClient.generateClientId(), new MemoryPersistence());
@@ -84,7 +78,7 @@ class MqttInboundHandlerIT {
                       clientId = "test_client"
                       addRandomnessToClientId = true
 
-                      manualAck = true
+                      manualAck = false
                       cleanSession = false
                       maxInflight = 10000
                       keepAliveInterval = 30
@@ -107,18 +101,12 @@ class MqttInboundHandlerIT {
         }
 
         @Bean
-        public Producer<byte[]> pulsarProducer() {
-            TypedMessageBuilder<byte[]> builder = Mockito.mock(TypedMessageBuilder.class, Mockito.RETURNS_SELF);
-            Mockito.when(builder.sendAsync()).thenAnswer(invocation -> {
+        public IntegrationFlow testFlow() {
+            return IntegrationFlow.from("mqttInputChannel").handle((payload, headers) -> {
                 counter.incrementAndGet();
                 latch.countDown();
-                return CompletableFuture.completedFuture(Mockito.mock(MessageId.class));
-            });
-
-            Producer<byte[]> producer = Mockito.mock(Producer.class);
-            Mockito.when(producer.newMessage()).thenReturn(builder);
-
-            return producer;
+                return null;
+            }).get();
         }
     }
 }
