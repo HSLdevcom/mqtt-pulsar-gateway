@@ -50,7 +50,7 @@ FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jre
 
 WORKDIR /usr/app
 
-COPY --from=build /usr/app/target/mqtt-pulsar-gateway-jar-with-dependencies.jar mqtt-pulsar-gateway.jar
+COPY --from=build /usr/app/target/mqtt-pulsar-gateway.jar mqtt-pulsar-gateway.jar
 
 COPY start-application.sh /
 RUN chmod +x /start-application.sh

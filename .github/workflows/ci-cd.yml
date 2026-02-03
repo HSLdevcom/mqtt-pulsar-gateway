@@ -10,8 +10,8 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
     with:
       uploadJarArtifact: true
-      jarArtifactName: mqtt-pulsar-gateway-jar-with-dependencies.jar
-      jarArtifactPath: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
+      jarArtifactName: mqtt-pulsar-gateway.jar
+      jarArtifactPath: target/mqtt-pulsar-gateway.jar
       workingDirectory: .
       runTestsInsideDocker: true
 
@@ -25,7 +25,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          name: mqtt-pulsar-gateway.jar
           path: target
       - name: Build and publish develop Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -44,7 +44,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          name: mqtt-pulsar-gateway.jar
           path: target
       - name: Build and publish release Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -63,7 +63,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          name: mqtt-pulsar-gateway.jar
           path: target
       - name: Build and publish aks-dev Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -81,7 +81,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          name: mqtt-pulsar-gateway.jar
           path: target
       - name: Build and publish aks-prod Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
