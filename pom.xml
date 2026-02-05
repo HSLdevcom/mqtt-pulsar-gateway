@@ -12,7 +12,6 @@
         <paho.version>1.2.5</paho.version>
         <spotlessMavenPlugin.version>2.43.0</spotlessMavenPlugin.version>
         <googleJavaFormat.version>1.17.0</googleJavaFormat.version>
-        <jacoco.version>0.8.14</jacoco.version>
     </properties>
 
     <repositories>
@@ -170,7 +169,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
+                <version>0.8.14</version>
             </plugin>
 
         </plugins>

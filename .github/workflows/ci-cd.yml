@@ -2,6 +2,9 @@ name: CI/CD
 
 on: [push, pull_request]
 
+env:
+  JACOCO_VERSION: "0.8.14"
+
 jobs:
   build:
     uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@feature/59649-measure-test-coverage
