@@ -4,16 +4,18 @@ on: [push, pull_request]
 
 jobs:
   build:
-    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@1.0.3
+    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@feature/59649-measure-test-coverage
     secrets:
       DOCKER_USERNAME: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
       DOCKER_PASSWORD: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     with:
       uploadJarArtifact: true
       jarArtifactName: mqtt-pulsar-gateway-jar-with-dependencies.jar
       jarArtifactPath: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
       workingDirectory: .
       runTestsInsideDocker: true
+      codeCoverageEnabled: true
 
   build-develop-docker-image:
     needs: build
