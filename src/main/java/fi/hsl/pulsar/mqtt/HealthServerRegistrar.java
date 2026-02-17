@@ -34,6 +34,7 @@ public class HealthServerRegistrar implements SmartLifecycle {
         if (healthServer == null) {
             logger.info("HealthServer is null; skipping health check registration.");
             running = false;
+            return;
         }
 
         healthServer.addCheck(() -> {
