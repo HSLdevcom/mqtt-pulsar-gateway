@@ -21,9 +21,8 @@ import org.testcontainers.utility.DockerImageName;
 public class MqttConnectorIT {
 
     @Rule
-    public GenericContainer<?> mqttBroker =
-            new GenericContainer<>(DockerImageName.parse("hivemq/hivemq4:latest"))
-                    .withExposedPorts(1883);
+    public GenericContainer<?> mqttBroker = new GenericContainer<>(DockerImageName.parse("hivemq/hivemq4:latest"))
+            .withExposedPorts(1883);
 
     @Test
     public void testMqttConnector() throws Exception {
