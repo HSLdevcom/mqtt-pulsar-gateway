@@ -18,7 +18,6 @@ jobs:
       jarArtifactPath: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
       workingDirectory: .
       runTestsInsideDocker: true
-      codeCoverageEnabled: true
 
   build-develop-docker-image:
     needs: build
