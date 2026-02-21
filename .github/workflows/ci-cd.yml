@@ -6,7 +6,7 @@ jobs:
   build:
     uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@feature/59649-measure-test-coverage
     secrets:
-      inherit: true
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       DOCKER_USERNAME: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
       DOCKER_PASSWORD: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
     with:
