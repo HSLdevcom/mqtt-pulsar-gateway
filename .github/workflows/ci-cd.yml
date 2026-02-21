@@ -8,6 +8,7 @@ jobs:
     secrets:
       DOCKER_USERNAME: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
       DOCKER_PASSWORD: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     with:
       uploadJarArtifact: true
       jarArtifactName: mqtt-pulsar-gateway-jar-with-dependencies.jar
