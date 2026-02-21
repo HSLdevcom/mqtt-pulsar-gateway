@@ -2,16 +2,12 @@ name: CI/CD
 
 on: [push, pull_request]
 
-env:
-  JACOCO_VERSION: "0.8.14"
-
 jobs:
   build:
     uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@feature/59649-measure-test-coverage
     secrets:
       DOCKER_USERNAME: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
       DOCKER_PASSWORD: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     with:
       uploadJarArtifact: true
       jarArtifactName: mqtt-pulsar-gateway-jar-with-dependencies.jar
