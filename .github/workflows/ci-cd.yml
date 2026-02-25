@@ -4,10 +4,8 @@ on: [push, pull_request]
 
 jobs:
   build:
-    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@1.0.3
-    secrets:
-      DOCKER_USERNAME: ${{ secrets.TRANSITDATA_DOCKERHUB_USER }}
-      DOCKER_PASSWORD: ${{ secrets.TRANSITDATA_DOCKERHUB_TOKEN }}
+    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@1.0.5
+    secrets: inherit
     with:
       uploadJarArtifact: true
       jarArtifactName: mqtt-pulsar-gateway-jar-with-dependencies.jar
