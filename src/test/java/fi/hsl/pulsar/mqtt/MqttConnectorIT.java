@@ -12,15 +12,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public class MqttConnectorIT {
-    @Rule
-    public GenericContainer mqttBroker = new GenericContainer(DockerImageName.parse("hivemq/hivemq4"))
-            .withExposedPorts(1883);
+
+    private static final GenericContainer<?> mqttBroker = new GenericContainer<>(
+            DockerImageName.parse("hivemq/hivemq4:latest")).withExposedPorts(1883);
+
+    @BeforeClass
+    public static void startContainer() {
+        mqttBroker.start();
+    }
+
+    @AfterClass
+    public static void stopContainer() {
+        mqttBroker.stop();
+    }
 
     @Test
     public void testMqttConnector() throws Exception {
