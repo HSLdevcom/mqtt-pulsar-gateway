@@ -1,0 +1,69 @@
+package fi.hsl.pulsar.mqtt.service;
+
+import org.apache.pulsar.client.api.PulsarClientException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.integration.IntegrationMessageHeaderAccessor;
+import org.springframework.integration.acks.SimpleAcknowledgment;
+import org.springframework.integration.mqtt.support.MqttHeaders;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageHandler;
+import org.springframework.messaging.MessagingException;
+import org.springframework.stereotype.Component;
+
+import java.util.Objects;
+
+@Component
+public class MqttToPulsarMessageHandler implements MessageHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(MqttToPulsarMessageHandler.class);
+
+    private static final String PROTOBUF_SCHEMA_MQTT_RAW_MESSAGE = "mqtt-raw";
+
+    private final RawMessageMapper rawMessageMapper;
+    private final PulsarPublisher pulsarPublisher;
+    private final FailFastShutdown failFastShutdown;
+
+    public MqttToPulsarMessageHandler(RawMessageMapper rawMessageMapper, PulsarPublisher pulsarPublisher,
+            FailFastShutdown failFastShutdown) {
+        this.rawMessageMapper = rawMessageMapper;
+        this.pulsarPublisher = pulsarPublisher;
+        this.failFastShutdown = failFastShutdown;
+    }
+
+    @Override
+    public void handleMessage(Message<?> message) throws MessagingException {
+        final String topic = Objects.toString(message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC), null);
+        if (topic == null || topic.isBlank()) {
+            throw new MessagingException(message, "Missing MQTT topic header");
+        }
+
+        Object ack = message.getHeaders().get(IntegrationMessageHeaderAccessor.ACKNOWLEDGMENT_CALLBACK);
+        if (!(ack instanceof SimpleAcknowledgment)) {
+            throw new MessagingException(message, "Missing MQTT acknowledgment header (manual acks must be enabled)");
+        }
+        SimpleAcknowledgment acknowledgment = (SimpleAcknowledgment) ack;
+
+        if (!(message.getPayload() instanceof byte[])) {
+            throw new MessagingException(message, "Expected byte[] payload");
+        }
+        byte[] mqttPayload = (byte[]) message.getPayload();
+
+        final long now = System.currentTimeMillis();
+        final byte[] pulsarPayload = rawMessageMapper.toRawMessageBytes(topic, mqttPayload);
+        final int schemaVersion = rawMessageMapper.schemaVersion();
+
+        try {
+            pulsarPublisher.publish(pulsarPayload, now, PROTOBUF_SCHEMA_MQTT_RAW_MESSAGE, schemaVersion);
+            acknowledgment.acknowledge();
+        } catch (PulsarClientException.TimeoutException e) {
+            log.error("Pulsar send timed out; failing fast to avoid ingesting buffered MQTT messages");
+            failFastShutdown.exitWithFailure(e);
+            throw new MessagingException(message, e);
+        } catch (PulsarClientException e) {
+            log.error("Pulsar send failed; failing fast", e);
+            failFastShutdown.exitWithFailure(e);
+            throw new MessagingException(message, e);
+        }
+    }
+}
