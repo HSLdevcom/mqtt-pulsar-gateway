@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.3</version>
+        <version>3.5.5</version>
         <relativePath />
     </parent>
 
@@ -16,12 +16,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>25</java.version>
-
         <common.version>3.0.0</common.version>
-
         <paho.version>1.2.5</paho.version>
         <pulsar-client.version>3.0.7</pulsar-client.version>
-
         <spotlessMavenPlugin.version>2.43.0</spotlessMavenPlugin.version>
         <testcontainers-bom.version>2.0.3</testcontainers-bom.version>
     </properties>
