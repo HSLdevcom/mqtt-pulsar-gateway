@@ -40,6 +40,11 @@ public class PulsarPublisher {
         log.info("Pulsar producer created, topic={}", props.getTopic());
     }
 
+    PulsarPublisher(PulsarClient client, Producer<byte[]> producer) {
+        this.client = client;
+        this.producer = producer;
+    }
+
     public void publish(byte[] payload, long eventTimeMs, String protobufSchema, int schemaVersion)
             throws PulsarClientException {
         Map<String, String> properties = Map.of(KEY_SOURCE_MESSAGE_TIMESTAMP_MS, String.valueOf(eventTimeMs),
