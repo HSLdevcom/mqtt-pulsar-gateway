@@ -1,6 +1,5 @@
 package fi.hsl.pulsar.mqtt.service;
 
-import fi.hsl.pulsar.mqtt.TransitdataMessageProperties;
 import fi.hsl.pulsar.mqtt.config.PulsarProperties;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClient;
