@@ -7,6 +7,7 @@ import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
@@ -25,6 +26,7 @@ public class PulsarPublisher {
     private final PulsarClient client;
     private final Producer<byte[]> producer;
 
+    @Autowired
     public PulsarPublisher(PulsarProperties props) throws PulsarClientException {
         if (props.getServiceUrl() == null || props.getServiceUrl().isBlank()) {
             throw new IllegalArgumentException("pulsar.serviceUrl is required");
