@@ -22,6 +22,11 @@ public class IntegrationConfigurationTest {
         props.setBrokerUrl("tcp://localhost:1883");
         props.setTopic("#");
         props.setClientId("test");
+        props.setUsername("user");
+        props.setPassword("pw");
+        props.setKeepAliveIntervalSeconds(12);
+        props.setConnectionTimeoutSeconds(13);
+        props.setMaxInflight(1234);
 
         IntegrationConfiguration cfg = new IntegrationConfiguration();
         DefaultMqttPahoClientFactory factory = (DefaultMqttPahoClientFactory) cfg.mqttClientFactory(props);
@@ -30,7 +35,11 @@ public class IntegrationConfigurationTest {
 
         assertNotNull(options);
         assertTrue(options.isCleanSession());
-        assertEquals(10_000, options.getMaxInflight());
+        assertEquals(1234, options.getMaxInflight());
+        assertEquals(12, options.getKeepAliveInterval());
+        assertEquals(13, options.getConnectionTimeout());
+        assertEquals("user", options.getUserName());
+        assertEquals("pw", new String(options.getPassword()));
     }
 
     @Test

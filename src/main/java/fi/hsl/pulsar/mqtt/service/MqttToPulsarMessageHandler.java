@@ -39,15 +39,13 @@ public class MqttToPulsarMessageHandler implements MessageHandler {
         }
 
         Object ack = message.getHeaders().get(IntegrationMessageHeaderAccessor.ACKNOWLEDGMENT_CALLBACK);
-        if (!(ack instanceof SimpleAcknowledgment)) {
+        if (!(ack instanceof SimpleAcknowledgment acknowledgment)) {
             throw new MessagingException(message, "Missing MQTT acknowledgment header (manual acks must be enabled)");
         }
-        SimpleAcknowledgment acknowledgment = (SimpleAcknowledgment) ack;
 
-        if (!(message.getPayload() instanceof byte[])) {
+        if (!(message.getPayload() instanceof byte[] mqttPayload)) {
             throw new MessagingException(message, "Expected byte[] payload");
         }
-        byte[] mqttPayload = (byte[]) message.getPayload();
 
         final long now = System.currentTimeMillis();
         final byte[] pulsarPayload = rawMessageMapper.toRawMessageBytes(topic, mqttPayload);

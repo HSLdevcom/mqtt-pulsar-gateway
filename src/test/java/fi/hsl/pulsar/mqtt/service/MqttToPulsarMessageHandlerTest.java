@@ -70,6 +70,30 @@ public class MqttToPulsarMessageHandlerTest {
     }
 
     @Test
+    public void failsFastOnPulsarErrorAndDoesNotAck() throws Exception {
+        RawMessageMapper mapper = mock(RawMessageMapper.class);
+        PulsarPublisher publisher = mock(PulsarPublisher.class);
+        FailFastShutdown shutdown = mock(FailFastShutdown.class);
+
+        when(mapper.toRawMessageBytes(anyString(), any(byte[].class))).thenReturn("mapped".getBytes());
+        when(mapper.schemaVersion()).thenReturn(1);
+
+        PulsarClientException failure = mock(PulsarClientException.class);
+        doThrow(failure).when(publisher).publish(any(byte[].class), anyLong(), anyString(), anyInt());
+
+        SimpleAcknowledgment ack = mock(SimpleAcknowledgment.class);
+
+        Message<?> msg = MessageBuilder.withPayload("x".getBytes()).setHeader(MqttHeaders.RECEIVED_TOPIC, "t/5")
+                .setHeader(IntegrationMessageHeaderAccessor.ACKNOWLEDGMENT_CALLBACK, ack).build();
+
+        assertThrows(MessagingException.class,
+                () -> new MqttToPulsarMessageHandler(mapper, publisher, shutdown).handleMessage(msg));
+
+        verify(shutdown).exitWithFailure(failure);
+        verify(ack, never()).acknowledge();
+    }
+
+    @Test
     public void throwsIfTopicMissing() {
         RawMessageMapper mapper = mock(RawMessageMapper.class);
         PulsarPublisher publisher = mock(PulsarPublisher.class);
