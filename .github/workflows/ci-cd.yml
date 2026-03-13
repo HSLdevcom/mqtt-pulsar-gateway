@@ -4,12 +4,10 @@ on: [push, pull_request]
 
 jobs:
   build:
-    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@1.0.5
+    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@feature/76477_standardize-jar-name
     secrets: inherit
     with:
       uploadJarArtifact: true
-      jarArtifactName: mqtt-pulsar-gateway-jar-with-dependencies.jar
-      jarArtifactPath: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
       workingDirectory: .
       runTestsInsideDocker: true
 
@@ -23,8 +21,8 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
-          path: target
+          name: app.jar
+          path: app
       - name: Build and publish develop Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
         with:
@@ -42,8 +40,8 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
-          path: target
+          name: app.jar
+          path: app
       - name: Build and publish release Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
         with:
@@ -61,8 +59,8 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
-          path: target
+          name: app.jar
+          path: app
       - name: Build and publish aks-dev Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
         with:
@@ -79,8 +77,8 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
-          path: target
+          name: app.jar
+          path: app
       - name: Build and publish aks-prod Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
         with:

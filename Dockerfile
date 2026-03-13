@@ -47,12 +47,3 @@ RUN --mount=type=secret,id=github_token \
 # Runtime stage
 # ============================
 FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jre
-
-WORKDIR /usr/app
-
-COPY --from=build /usr/app/target/mqtt-pulsar-gateway-jar-with-dependencies.jar mqtt-pulsar-gateway.jar
-
-COPY start-application.sh /
-RUN chmod +x /start-application.sh
-
-CMD ["/start-application.sh"]
