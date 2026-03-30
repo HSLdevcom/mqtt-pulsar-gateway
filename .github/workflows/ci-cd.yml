@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@feature/76477_standardize-jar-name
+    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@feature/76471_enforce-java-version-consistency-check
     secrets: inherit
     with:
       uploadJarArtifact: true
