@@ -13,4 +13,4 @@ if [[ "${DEBUG_ENABLED:-false}" == "true" ]]; then
   )
 fi
 
-exec java "${JAVA_OPTS[@]}" -jar /usr/app/mqtt-pulsar-gateway.jar
+exec java "${JAVA_OPTS[@]}" -jar app.jar
