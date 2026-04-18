@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.actor == 'dependabot[bot]' &&                                                                                                                                
-      github.base_ref == 'develop'
+      github.base_ref == 'master'
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
@@ -19,29 +19,25 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Auto-approve patch updates
-        if: |
-          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||                                                                                          
-          steps.metadata.outputs.update-type == 'version-update:semver-minor'
+      - name: Auto-approve grouped updates
+        if: steps.metadata.outputs.dependency-group != ''
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge for patch updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
-        run: gh pr merge --auto --squash "$PR_URL"
+      - name: Enable auto-merge for grouped updates
+        if: steps.metadata.outputs.dependency-group != ''
+        run: gh pr merge --auto --rebase "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Comment on minor/major updates requiring manual review
-        if: |
-          steps.metadata.outputs.update-type == 'version-update:semver-minor' ||                                                                                          
-          steps.metadata.outputs.update-type == 'version-update:semver-major'
+      - name: Comment on ungrouped updates requiring manual review
+        if: steps.metadata.outputs.dependency-group == ''
         run: |
-          gh pr comment "$PR_URL" --body \                                                                                                                                
-            "This is a **$UPDATE_TYPE** update and requires manual review before merging into \`develop\`."
+          gh pr comment "$PR_URL" --body \
+            "This is an ungrouped **$UPDATE_TYPE** update and requires manual review before merging into \`develop\`."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}

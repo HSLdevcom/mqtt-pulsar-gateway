@@ -1,22 +1,137 @@
 version: 2
+multi-ecosystem-groups:
+  hsldevcom-infra:
+    schedule:
+      interval: "daily"
+    updates:
+      - package-ecosystem: "docker"
+        directory: "/"
+        patterns: ["hsldevcom/*"]
+        multi-ecosystem-group: "hsldevcom-infra"
+      - package-ecosystem: "github-actions"
+        directory: "/"
+        patterns: ["HSLdevcom/*"]
+        multi-ecosystem-group: "hsldevcom-infra"
 updates:
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
-      interval: "monthly"
-    target-branch: "develop"
-    open-pull-requests-limit: 2
-
-  - package-ecosystem: "github-actions"
+      interval: "daily"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 30
+      semver-major-days: 90
+      semver-minor-days: 60
+      semver-patch-days: 30
+    groups:
+      dev-all:
+        dependency-type: "development"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+      prod-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "gradle"
     directory: "/"
     schedule:
-      interval: "monthly"
-    target-branch: "develop"
-    open-pull-requests-limit: 2
-
+      interval: "daily"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 30
+      semver-major-days: 90
+      semver-minor-days: 60
+      semver-patch-days: 30
+    groups:
+      dev-all:
+        dependency-type: "development"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+      prod-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 30
+      semver-major-days: 90
+      semver-minor-days: 60
+      semver-patch-days: 30
+    groups:
+      dev-all:
+        dependency-type: "development"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+      prod-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 30
+      semver-major-days: 90
+      semver-minor-days: 60
+      semver-patch-days: 30
+    groups:
+      dev-all:
+        dependency-type: "development"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+      prod-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "monthly"
-    target-branch: "develop"
-    open-pull-requests-limit: 2
+      interval: "daily"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 30
+      semver-major-days: 90
+      semver-minor-days: 60
+      semver-patch-days: 30
+    ignore:
+      - dependency-name: "eclipse-temurin/*"
+        # Ignore non-LTS versions; extend as the release schedule evolves
+        versions: ["26", "27", "28", "30", "31", "32", "34", "35", "36"]
+    groups:
+      docker-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 20
+    cooldown:
+      default-days: 30
+      semver-major-days: 90
+      semver-minor-days: 60
+      semver-patch-days: 30
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
