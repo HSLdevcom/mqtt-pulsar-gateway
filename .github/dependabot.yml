@@ -108,9 +108,6 @@ updates:
     open-pull-requests-limit: 20
     cooldown:
       default-days: 30
-      semver-major-days: 90
-      semver-minor-days: 60
-      semver-patch-days: 30
     ignore:
       - dependency-name: "eclipse-temurin/*"
         # Ignore non-LTS versions; extend as the release schedule evolves
@@ -127,9 +124,6 @@ updates:
     open-pull-requests-limit: 20
     cooldown:
       default-days: 30
-      semver-major-days: 90
-      semver-minor-days: 60
-      semver-patch-days: 30
     groups:
       actions-minor-patch:
         update-types:
