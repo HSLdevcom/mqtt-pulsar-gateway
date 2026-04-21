@@ -5,12 +5,15 @@ import org.apache.pulsar.client.api.ClientBuilder;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.ProducerBuilder;
 import org.apache.pulsar.client.api.PulsarClient;
+import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,6 +56,35 @@ public class PulsarPublisherConstructorTest {
             verify(producerBuilder).maxPendingMessages(42);
             verify(producerBuilder).blockIfQueueFull(true);
             verify(producerBuilder).create();
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void constructorClosesClientWhenProducerCreationFails() throws Exception {
+        PulsarProperties props = new PulsarProperties("pulsar://x:6650", "mqtt-raw", 7, 42);
+
+        PulsarClient client = mock(PulsarClient.class);
+        PulsarClientException producerError = new PulsarClientException("producer creation failed");
+
+        ProducerBuilder<byte[]> producerBuilder = mock(ProducerBuilder.class);
+        when(client.newProducer(Schema.BYTES)).thenReturn(producerBuilder);
+        when(producerBuilder.topic(anyString())).thenReturn(producerBuilder);
+        when(producerBuilder.sendTimeout(anyInt(), eq(TimeUnit.SECONDS))).thenReturn(producerBuilder);
+        when(producerBuilder.maxPendingMessages(anyInt())).thenReturn(producerBuilder);
+        when(producerBuilder.blockIfQueueFull(true)).thenReturn(producerBuilder);
+        when(producerBuilder.create()).thenThrow(producerError);
+
+        ClientBuilder clientBuilder = mock(ClientBuilder.class);
+        when(clientBuilder.serviceUrl(anyString())).thenReturn(clientBuilder);
+        when(clientBuilder.build()).thenReturn(client);
+
+        try (MockedStatic<PulsarClient> pulsarClient = mockStatic(PulsarClient.class)) {
+            pulsarClient.when(PulsarClient::builder).thenReturn(clientBuilder);
+
+            PulsarClientException thrown = assertThrows(PulsarClientException.class, () -> new PulsarPublisher(props));
+            assertSame(producerError, thrown);
+            verify(client).close();
         }
     }
 }
