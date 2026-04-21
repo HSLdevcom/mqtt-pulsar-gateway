@@ -29,9 +29,18 @@ public class PulsarPublisher {
     @Autowired
     public PulsarPublisher(PulsarProperties props) throws PulsarClientException {
         this.client = PulsarClient.builder().serviceUrl(props.serviceUrl()).build();
-        this.producer = client.newProducer(Schema.BYTES).topic(props.topic())
-                .sendTimeout(props.sendTimeoutSeconds(), TimeUnit.SECONDS)
-                .maxPendingMessages(props.maxPendingMessages()).blockIfQueueFull(true).create();
+        try {
+            this.producer = client.newProducer(Schema.BYTES).topic(props.topic())
+                    .sendTimeout(props.sendTimeoutSeconds(), TimeUnit.SECONDS)
+                    .maxPendingMessages(props.maxPendingMessages()).blockIfQueueFull(true).create();
+        } catch (PulsarClientException e) {
+            try {
+                client.close();
+            } catch (PulsarClientException closeEx) {
+                e.addSuppressed(closeEx);
+            }
+            throw e;
+        }
         log.info("Pulsar producer created, topic={}", props.topic());
     }
 
