@@ -26,27 +26,20 @@ public class IntegrationConfiguration {
 
     @Bean
     public MqttPahoClientFactory mqttClientFactory(MqttProperties mqttProperties) {
-        if (mqttProperties.getBrokerUrl() == null || mqttProperties.getBrokerUrl().isBlank()) {
-            throw new IllegalArgumentException("mqtt.brokerUrl is required");
-        }
-        if (mqttProperties.getTopic() == null || mqttProperties.getTopic().isBlank()) {
-            throw new IllegalArgumentException("mqtt.topic is required");
-        }
-
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
 
         MqttConnectOptions options = new MqttConnectOptions();
-        options.setServerURIs(new String[]{mqttProperties.getBrokerUrl()});
+        options.setServerURIs(new String[]{mqttProperties.brokerUrl()});
         options.setCleanSession(true);
-        options.setMaxInflight(mqttProperties.getMaxInflight());
+        options.setMaxInflight(mqttProperties.maxInflight());
         options.setAutomaticReconnect(true);
-        options.setKeepAliveInterval(mqttProperties.getKeepAliveIntervalSeconds());
-        options.setConnectionTimeout(mqttProperties.getConnectionTimeoutSeconds());
+        options.setKeepAliveInterval(mqttProperties.keepAliveIntervalSeconds());
+        options.setConnectionTimeout(mqttProperties.connectionTimeoutSeconds());
 
-        if (mqttProperties.getUsername() != null && !mqttProperties.getUsername().isBlank()) {
-            options.setUserName(mqttProperties.getUsername());
-            if (mqttProperties.getPassword() != null) {
-                options.setPassword(mqttProperties.getPassword().toCharArray());
+        if (mqttProperties.username() != null && !mqttProperties.username().isBlank()) {
+            options.setUserName(mqttProperties.username());
+            if (mqttProperties.password() != null) {
+                options.setPassword(mqttProperties.password().toCharArray());
             }
         }
 
@@ -63,12 +56,11 @@ public class IntegrationConfiguration {
     public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(MqttProperties mqttProperties,
             MqttPahoClientFactory mqttClientFactory) {
         log.info("Configuring MQTT inbound adapter: brokerUrl={}, topic={}, qos={}, clientId={}, cleanSession=true",
-                mqttProperties.getBrokerUrl(), mqttProperties.getTopic(), mqttProperties.getQos(),
-                mqttProperties.getClientId());
+                mqttProperties.brokerUrl(), mqttProperties.topic(), mqttProperties.qos(), mqttProperties.clientId());
 
-        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(
-                mqttProperties.getClientId(), mqttClientFactory, mqttProperties.getTopic());
-        adapter.setQos(mqttProperties.getQos());
+        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(mqttProperties.clientId(),
+                mqttClientFactory, mqttProperties.topic());
+        adapter.setQos(mqttProperties.qos());
         adapter.setManualAcks(true);
 
         DefaultPahoMessageConverter converter = new DefaultPahoMessageConverter();

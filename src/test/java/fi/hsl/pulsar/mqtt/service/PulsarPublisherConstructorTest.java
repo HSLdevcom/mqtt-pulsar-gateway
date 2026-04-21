@@ -5,15 +5,12 @@ import org.apache.pulsar.client.api.ClientBuilder;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.ProducerBuilder;
 import org.apache.pulsar.client.api.PulsarClient;
-import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -25,29 +22,9 @@ import static org.mockito.Mockito.when;
 public class PulsarPublisherConstructorTest {
 
     @Test
-    public void constructorValidatesServiceUrl() {
-        PulsarProperties props = new PulsarProperties();
-        props.setServiceUrl(" ");
-        props.setTopic("t");
-        assertThrows(IllegalArgumentException.class, () -> new PulsarPublisher(props));
-    }
-
-    @Test
-    public void constructorValidatesTopic() {
-        PulsarProperties props = new PulsarProperties();
-        props.setServiceUrl("pulsar://x:6650");
-        props.setTopic(" ");
-        assertThrows(IllegalArgumentException.class, () -> new PulsarPublisher(props));
-    }
-
-    @Test
     @SuppressWarnings("unchecked")
     public void constructorBuildsClientAndProducer() throws Exception {
-        PulsarProperties props = new PulsarProperties();
-        props.setServiceUrl("pulsar://x:6650");
-        props.setTopic("mqtt-raw");
-        props.setSendTimeoutSeconds(7);
-        props.setMaxPendingMessages(42);
+        PulsarProperties props = new PulsarProperties("pulsar://x:6650", "mqtt-raw", 7, 42);
 
         PulsarClient client = mock(PulsarClient.class);
         Producer<byte[]> producer = mock(Producer.class);

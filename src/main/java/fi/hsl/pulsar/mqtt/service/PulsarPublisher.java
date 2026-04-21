@@ -28,18 +28,11 @@ public class PulsarPublisher {
 
     @Autowired
     public PulsarPublisher(PulsarProperties props) throws PulsarClientException {
-        if (props.getServiceUrl() == null || props.getServiceUrl().isBlank()) {
-            throw new IllegalArgumentException("pulsar.serviceUrl is required");
-        }
-        if (props.getTopic() == null || props.getTopic().isBlank()) {
-            throw new IllegalArgumentException("pulsar.topic is required");
-        }
-
-        this.client = PulsarClient.builder().serviceUrl(props.getServiceUrl()).build();
-        this.producer = client.newProducer(Schema.BYTES).topic(props.getTopic())
-                .sendTimeout(props.getSendTimeoutSeconds(), TimeUnit.SECONDS)
-                .maxPendingMessages(props.getMaxPendingMessages()).blockIfQueueFull(true).create();
-        log.info("Pulsar producer created, topic={}", props.getTopic());
+        this.client = PulsarClient.builder().serviceUrl(props.serviceUrl()).build();
+        this.producer = client.newProducer(Schema.BYTES).topic(props.topic())
+                .sendTimeout(props.sendTimeoutSeconds(), TimeUnit.SECONDS)
+                .maxPendingMessages(props.maxPendingMessages()).blockIfQueueFull(true).create();
+        log.info("Pulsar producer created, topic={}", props.topic());
     }
 
     PulsarPublisher(PulsarClient client, Producer<byte[]> producer) {
