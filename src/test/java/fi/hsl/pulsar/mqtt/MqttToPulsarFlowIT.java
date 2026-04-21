@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.integration.channel.DirectChannel;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
 import java.nio.charset.StandardCharsets;
@@ -38,7 +39,9 @@ import static org.mockito.Mockito.verify;
 public class MqttToPulsarFlowIT {
 
     private static final GenericContainer<?> mqttBroker = new GenericContainer<>(
-            DockerImageName.parse("hivemq/hivemq4:latest")).withExposedPorts(1883);
+            DockerImageName.parse("eclipse-mosquitto:2.1.2-alpine")).withExposedPorts(1883)
+            .withCopyToContainer(Transferable.of("listener 1883 0.0.0.0\nallow_anonymous true\n"),
+                    "/mosquitto/config/mosquitto.conf");
 
     @BeforeAll
     static void startContainer() {
