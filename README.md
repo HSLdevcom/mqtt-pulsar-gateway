@@ -1,46 +1,64 @@
-[![Build Status](https://travis-ci.org/HSLdevcom/mqtt-pulsar-gateway.svg?branch=master)](https://travis-ci.org/HSLdevcom/mqtt-pulsar-gateway)
+# mqtt-pulsar-gateway
 
-## Description
+Subscribe to an MQTT broker, wrap each message in a Protobuf `RawMessage` envelope and publish it to Apache Pulsar.
+The gateway does not inspect the payload; it transfers bytes.
+MQTT messages are acknowledged only after the corresponding Pulsar send succeeds.
+If a Pulsar send fails, the service shuts down immediately to avoid silently dropping messages.
 
-Application for reading data from MQTT topic and feeding it into Pulsar topic. 
-This application doesn't care about the payload, it just transfers the bytes.
+This project depends on [transitdata-common](https://github.com/HSLdevcom/transitdata-common) for the MQTT Protobuf schema definition, consumed as a Maven dependency from GitHub Packages.
 
-## Building
+## Development
 
-### Dependencies
+Authentication to GitHub Packages is required for fetching dependencies.
+Configure a [personal access token](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-apache-maven-registry) with `read:packages` scope in `.mvn/settings.xml`.
 
-This project depends on [transitdata-common](https://github.com/HSLdevcom/transitdata-common) project.
+Build and run all tests (unit and integration):
 
-Either use released versions from public maven repository or build your own and install to local maven repository:
-  - ```cd transitdata-common && mvn install```  
+```sh
+./mvnw verify
+```
 
-### Locally
+Integration tests use [Testcontainers](https://testcontainers.com/) to spin up MQTT and Pulsar brokers, so a running Docker daemon is required.
 
-- ```mvn compile```  
-- ```mvn package```  
+Run only unit tests (no Docker needed):
 
-### Docker image
+```sh
+./mvnw test
+```
 
-- Run [this script](build-image.sh) to build the Docker image
+## Docker
 
+The multi-stage Dockerfile builds, tests and packages the application.
+It requires a GitHub token as a Docker build secret for accessing GitHub Packages:
 
-## Running
+```sh
+docker build --secret id=github_token,src=<path-to-token-file> -t hsldevcom/mqtt-pulsar-gateway .
+```
 
-Requirements:
-- Pulsar Cluster
-  - By default uses localhost, override host in PULSAR_HOST if needed.
-    - Tip: f.ex if running inside Docker in OSX set `PULSAR_HOST=host.docker.internal` to connect to the parent machine
-  - You can use [this script](https://github.com/HSLdevcom/transitdata/blob/master/bin/pulsar/pulsar-up.sh) to launch it as Docker container
-- Connection to an external MQTT server.
-  - Configure username and password via files
-    - Set filepath for username via env variable FILEPATH_USERNAME_SECRET, default is `/run/secrets/mqtt_broker_username`
-    - Set filepath for password via env variable FILEPATH_PASSWORD_SECRET, default is `/run/secrets/mqtt_broker_password`
-  - Mandatory: Set mqtt-topic via env variable MQTT_TOPIC
-  - Remember to use a unique MQTT client-id's if you have multiple instances connected to a single broker.
+## Configuration
 
-All other configuration options are configured in the [config file](src/main/resources/environment.conf)
-which can also be configured externally via env variable CONFIG_PATH
+All configuration is via environment variables.
+Spring Boot binds them to the properties below.
 
-Launch Docker container with
+The application exposes Spring Boot Actuator endpoints on the default port (8080):
+`/actuator/health` and `/actuator/info`.
 
-```docker-compose -f compose-config-file.yml up <service-name>```   
+The application emits structured logs in Logstash JSON format to stdout.
+
+| Environment variable              | Required | Default | Description                                                                                                                                                                                                                                                                       |
+| --------------------------------- | -------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DEBUG_ENABLED`                   | No       | `false` | Enable JDWP remote debug on port 5005.                                                                                                                                                                                                                                            |
+| `MQTT_BROKER_HOST`                | Yes      |         | MQTT broker URI, e.g. `tcp://broker:1883` or `ssl://broker:8883`.                                                                                                                                                                                                                 |
+| `MQTT_BROKER_PASSWORD`            | No       |         | MQTT password. Pair with `MQTT_BROKER_USERNAME` or leave both unset. The gateway connects without credentials when blank.                                                                                                                                                         |
+| `MQTT_BROKER_USERNAME`            | No       |         | MQTT username. Pair with `MQTT_BROKER_PASSWORD` or leave both unset. The gateway connects without credentials when blank.                                                                                                                                                         |
+| `MQTT_CLEAN_SESSION`              | No       | `true`  | Whether to start a clean MQTT session. When multiple replicas run and downstream deduplication relies on a limited cache, `true` prevents a reconnecting replica from draining stale messages that would fall outside the deduplication window. Other replicas cover for the gap. |
+| `MQTT_CLIENT_ID`                  | Yes      |         | MQTT client ID. Must be unique per broker connection.                                                                                                                                                                                                                             |
+| `MQTT_CONNECTION_TIMEOUT_SECONDS` | No       | `10`    | MQTT connection timeout in seconds.                                                                                                                                                                                                                                               |
+| `MQTT_KEEP_ALIVE_INTERVAL`        | No       | `30`    | MQTT keep-alive interval in seconds.                                                                                                                                                                                                                                              |
+| `MQTT_MAX_INFLIGHT`               | No       | `10000` | Maximum number of in-flight MQTT messages.                                                                                                                                                                                                                                        |
+| `MQTT_QOS`                        | No       | `2`     | MQTT QoS level (0, 1 or 2). The broker delivers at min(publisher QoS, subscriber QoS), so `2` preserves the guarantees chosen by each publisher.                                                                                                                                  |
+| `MQTT_TOPIC`                      | Yes      |         | MQTT topic filter to subscribe to.                                                                                                                                                                                                                                                |
+| `PULSAR_PRODUCER_QUEUE_SIZE`      | No       | `10000` | Maximum number of pending Pulsar messages. Blocks when full.                                                                                                                                                                                                                      |
+| `PULSAR_PRODUCER_TOPIC`           | Yes      |         | Pulsar topic to publish to.                                                                                                                                                                                                                                                       |
+| `PULSAR_SEND_TIMEOUT_SECONDS`     | No       | `20`    | Pulsar send timeout in seconds.                                                                                                                                                                                                                                                   |
+| `PULSAR_SERVICE_URL`              | Yes      |         | Pulsar service URL.                                                                                                                                                                                                                                                               |
