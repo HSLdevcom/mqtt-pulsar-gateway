@@ -58,8 +58,8 @@ public class MqttToPulsarFlowIT {
     public void publishesWrappedProtobufToPulsarPublisher() throws Exception {
         String brokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
 
-        MqttProperties mqttProps = new MqttProperties(brokerUri, "test/#", 1, "it-" + UUID.randomUUID(), 10_000, 30, 10,
-                null, null);
+        MqttProperties mqttProps = new MqttProperties(brokerUri, "test/#", 1, "it-" + UUID.randomUUID(), true, 10_000,
+                30, 10, null, null);
 
         IntegrationConfiguration cfg = new IntegrationConfiguration();
         var factory = cfg.mqttClientFactory(mqttProps);
