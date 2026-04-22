@@ -17,7 +17,8 @@ public class IntegrationConfigurationTest {
 
     @Test
     public void mqttClientFactoryUsesCleanSessionTrue() throws Exception {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "#", 1, "test", 1234, 12, 13, "user", "pw");
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "#", 1, "test", true, 1234, 12, 13, "user",
+                "pw");
 
         IntegrationConfiguration cfg = new IntegrationConfiguration();
         DefaultMqttPahoClientFactory factory = (DefaultMqttPahoClientFactory) cfg.mqttClientFactory(props);
@@ -35,7 +36,8 @@ public class IntegrationConfigurationTest {
 
     @Test
     public void mqttInboundAdapterManualAcksEnabled() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "#", 1, "test", 10_000, 30, 10, null, null);
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "#", 1, "test", true, 10_000, 30, 10, null,
+                null);
 
         IntegrationConfiguration cfg = new IntegrationConfiguration();
         var factory = cfg.mqttClientFactory(props);

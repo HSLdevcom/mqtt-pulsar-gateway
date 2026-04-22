@@ -30,7 +30,7 @@ public class IntegrationConfiguration {
 
         MqttConnectOptions options = new MqttConnectOptions();
         options.setServerURIs(new String[]{mqttProperties.brokerUrl()});
-        options.setCleanSession(true);
+        options.setCleanSession(mqttProperties.cleanSession());
         options.setMaxInflight(mqttProperties.maxInflight());
         options.setAutomaticReconnect(true);
         options.setKeepAliveInterval(mqttProperties.keepAliveIntervalSeconds());
@@ -55,8 +55,9 @@ public class IntegrationConfiguration {
     @Bean
     public MqttPahoMessageDrivenChannelAdapter mqttInboundAdapter(MqttProperties mqttProperties,
             MqttPahoClientFactory mqttClientFactory) {
-        log.info("Configuring MQTT inbound adapter: brokerUrl={}, topic={}, qos={}, clientId={}, cleanSession=true",
-                mqttProperties.brokerUrl(), mqttProperties.topic(), mqttProperties.qos(), mqttProperties.clientId());
+        log.info("Configuring MQTT inbound adapter: brokerUrl={}, topic={}, qos={}, clientId={}, cleanSession={}",
+                mqttProperties.brokerUrl(), mqttProperties.topic(), mqttProperties.qos(), mqttProperties.clientId(),
+                mqttProperties.cleanSession());
 
         MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(mqttProperties.clientId(),
                 mqttClientFactory, mqttProperties.topic());
