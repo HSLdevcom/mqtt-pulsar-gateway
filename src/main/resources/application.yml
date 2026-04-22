@@ -1,8 +1,8 @@
 mqtt:
-  brokerUrl: ${MQTT_BROKER_HOST:ssl://mqtt.hsl.fi:8883}
-  topic: ${MQTT_TOPIC:/hfp/v1/journey/ongoing/#}
+  brokerUrl: ${MQTT_BROKER_HOST}
+  topic: ${MQTT_TOPIC}
   qos: ${MQTT_QOS:1}
-  clientId: ${MQTT_CLIENT_ID:mqtt-pulsar-gateway}
+  clientId: ${MQTT_CLIENT_ID}
   maxInflight: ${MQTT_MAX_INFLIGHT:10000}
   keepAliveIntervalSeconds: ${MQTT_KEEP_ALIVE_INTERVAL:30}
   connectionTimeoutSeconds: ${MQTT_CONNECTION_TIMEOUT_SECONDS:10}
@@ -10,8 +10,8 @@ mqtt:
   password: ${MQTT_BROKER_PASSWORD:}
 
 pulsar:
-  serviceUrl: ${PULSAR_SERVICE_URL:pulsar://localhost:6650}
-  topic: ${PULSAR_PRODUCER_TOPIC:mqtt-raw}
+  serviceUrl: ${PULSAR_SERVICE_URL}
+  topic: ${PULSAR_PRODUCER_TOPIC}
   sendTimeoutSeconds: ${PULSAR_SEND_TIMEOUT_SECONDS:20}
   maxPendingMessages: ${PULSAR_PRODUCER_QUEUE_SIZE:10000}
 
