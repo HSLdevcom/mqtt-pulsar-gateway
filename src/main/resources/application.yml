@@ -1,7 +1,7 @@
 mqtt:
   brokerUrl: ${MQTT_BROKER_HOST}
   topic: ${MQTT_TOPIC}
-  qos: ${MQTT_QOS:1}
+  qos: ${MQTT_QOS:2}
   clientId: ${MQTT_CLIENT_ID}
   maxInflight: ${MQTT_MAX_INFLIGHT:10000}
   keepAliveIntervalSeconds: ${MQTT_KEEP_ALIVE_INTERVAL:30}
