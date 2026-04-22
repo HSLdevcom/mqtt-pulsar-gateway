@@ -1,5 +1,8 @@
 package fi.hsl.pulsar.mqtt;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Ports;
 import fi.hsl.common.mqtt.proto.Mqtt;
 import fi.hsl.pulsar.mqtt.config.IntegrationConfiguration;
 import fi.hsl.pulsar.mqtt.config.MqttProperties;
@@ -39,13 +42,19 @@ import static org.mockito.Mockito.mock;
 
 public class MqttToPulsarFlowIT {
 
+    private static final int MQTT_PORT = 1883;
+
     private static final GenericContainer<?> mqttBroker = new GenericContainer<>(
-            DockerImageName.parse("eclipse-mosquitto:2.1.2-alpine")).withExposedPorts(1883)
+            DockerImageName.parse("eclipse-mosquitto:2.1.2-alpine"))
+            .withExposedPorts(MQTT_PORT)
             .withCopyToContainer(Transferable.of("listener 1883 0.0.0.0\nallow_anonymous true\n"),
-                    "/mosquitto/config/mosquitto.conf");
+                    "/mosquitto/config/mosquitto.conf")
+            .withCreateContainerCmdModifier(cmd -> bindToLocalhost(cmd, MQTT_PORT));
 
     private static final PulsarContainer pulsarBroker = new PulsarContainer(
-            DockerImageName.parse("apachepulsar/pulsar:4.2.0")).withEnv("PULSAR_PREFIX_advertisedAddress", "localhost");
+            DockerImageName.parse("apachepulsar/pulsar:4.2.0")).withEnv("PULSAR_PREFIX_advertisedAddress", "localhost")
+            .withCreateContainerCmdModifier(
+                    cmd -> bindToLocalhost(cmd, PulsarContainer.BROKER_PORT, PulsarContainer.BROKER_HTTP_PORT));
 
     @BeforeAll
     static void startContainers() {
@@ -134,5 +143,14 @@ public class MqttToPulsarFlowIT {
         publisher.close();
         adapter.stop();
         adapter.destroy();
+    }
+
+    /** Bind the given container ports to 127.0.0.1 so they are not reachable from the network. */
+    private static void bindToLocalhost(CreateContainerCmd cmd, int... ports) {
+        var bindings = new Ports();
+        for (int port : ports) {
+            bindings.bind(ExposedPort.tcp(port), Ports.Binding.bindIp("127.0.0.1"));
+        }
+        cmd.getHostConfig().withPortBindings(bindings);
     }
 }
