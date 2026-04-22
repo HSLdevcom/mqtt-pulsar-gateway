@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class RawMessageFactoryTest {
+public class RawMessageMapperTest {
     @Test
     public void testWithJsonFile() throws Exception {
         ClassLoader classLoader = getClass().getClassLoader();
