@@ -24,7 +24,8 @@ public class MqttPropertiesTest {
 
     @Test
     public void validPropertiesPassValidation() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", 10_000, 30, 10, "u", "p");
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 10_000, 30, 10, "u",
+                "p");
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
@@ -33,6 +34,7 @@ public class MqttPropertiesTest {
         assertEquals("test/#", props.topic());
         assertEquals(1, props.qos());
         assertEquals("cid", props.clientId());
+        assertTrue(props.cleanSession());
         assertEquals(10_000, props.maxInflight());
         assertEquals(30, props.keepAliveIntervalSeconds());
         assertEquals(10, props.connectionTimeoutSeconds());
@@ -42,7 +44,7 @@ public class MqttPropertiesTest {
 
     @Test
     public void rejectsBlankBrokerUrl() {
-        MqttProperties props = new MqttProperties(" ", "test/#", 1, "cid", 10_000, 30, 10, null, null);
+        MqttProperties props = new MqttProperties(" ", "test/#", 1, "cid", true, 10_000, 30, 10, null, null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
@@ -51,7 +53,8 @@ public class MqttPropertiesTest {
 
     @Test
     public void rejectsBlankTopic() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", " ", 1, "cid", 10_000, 30, 10, null, null);
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", " ", 1, "cid", true, 10_000, 30, 10, null,
+                null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
@@ -60,7 +63,8 @@ public class MqttPropertiesTest {
 
     @Test
     public void rejectsBlankClientId() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "", 10_000, 30, 10, null, null);
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "", true, 10_000, 30, 10, null,
+                null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
@@ -69,8 +73,8 @@ public class MqttPropertiesTest {
 
     @Test
     public void rejectsQosBelow0() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", -1, "cid", 10_000, 30, 10, null,
-                null);
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", -1, "cid", true, 10_000, 30, 10,
+                null, null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
@@ -79,8 +83,8 @@ public class MqttPropertiesTest {
 
     @Test
     public void rejectsQosAbove2() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 3, "cid", 10_000, 30, 10, null,
-                null);
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 3, "cid", true, 10_000, 30, 10,
+                null, null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
@@ -89,7 +93,8 @@ public class MqttPropertiesTest {
 
     @Test
     public void rejectsNonPositiveMaxInflight() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", 0, 30, 10, null, null);
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 0, 30, 10, null,
+                null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
@@ -98,7 +103,7 @@ public class MqttPropertiesTest {
 
     @Test
     public void rejectsNonPositiveKeepAlive() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", 10_000, 0, 10, null,
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 10_000, 0, 10, null,
                 null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
@@ -108,8 +113,8 @@ public class MqttPropertiesTest {
 
     @Test
     public void rejectsNonPositiveConnectionTimeout() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", 10_000, 30, -1, null,
-                null);
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 10_000, 30, -1,
+                null, null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
@@ -118,8 +123,8 @@ public class MqttPropertiesTest {
 
     @Test
     public void allowsNullUsernameAndPassword() {
-        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", 10_000, 30, 10, null,
-                null);
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 10_000, 30, 10,
+                null, null);
 
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 

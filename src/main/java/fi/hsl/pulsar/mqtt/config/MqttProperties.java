@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties(prefix = "mqtt")
 public record MqttProperties(@NotBlank String brokerUrl, @NotBlank String topic, @Min(0) @Max(2) int qos,
-        @NotBlank String clientId, @Positive int maxInflight, @Positive int keepAliveIntervalSeconds,
-        @Positive int connectionTimeoutSeconds, String username, String password) {
+        @NotBlank String clientId, boolean cleanSession, @Positive int maxInflight,
+        @Positive int keepAliveIntervalSeconds, @Positive int connectionTimeoutSeconds, String username,
+        String password) {
 }
