@@ -21,7 +21,7 @@ public record MqttProperties(@NotBlank String brokerUrl, @NotBlank String topic,
     }
 
     public Optional<Credentials> credentials() {
-        if (username != null && !username.isBlank() && password != null && !password.isBlank()) {
+        if (hasValue(username) && hasValue(password)) {
             return Optional.of(new Credentials(username, password));
         }
         return Optional.empty();
@@ -29,8 +29,10 @@ public record MqttProperties(@NotBlank String brokerUrl, @NotBlank String topic,
 
     @AssertTrue(message = "username and password must both be provided or both be absent")
     public boolean isCredentialsComplete() {
-        boolean hasUsername = username != null && !username.isBlank();
-        boolean hasPassword = password != null && !password.isBlank();
-        return hasUsername == hasPassword;
+        return hasValue(username) == hasValue(password);
+    }
+
+    private static boolean hasValue(String value) {
+        return value != null && !value.isBlank();
     }
 }
