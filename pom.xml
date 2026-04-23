@@ -17,6 +17,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>25</java.version>
         <common.version>3.0.0</common.version>
+        <jqwik.version>1.9.3</jqwik.version>
         <paho.version>1.2.5</paho.version>
         <pulsar-client.version>3.0.7</pulsar-client.version>
         <spotlessMavenPlugin.version>2.43.0</spotlessMavenPlugin.version>
@@ -97,6 +98,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-pulsar</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
+            <version>${jqwik.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
