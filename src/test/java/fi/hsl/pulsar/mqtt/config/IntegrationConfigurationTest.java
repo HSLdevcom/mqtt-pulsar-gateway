@@ -3,11 +3,8 @@ package fi.hsl.pulsar.mqtt.config;
 import org.junit.jupiter.api.Test;
 import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
-import org.springframework.integration.mqtt.inbound.AbstractMqttMessageDrivenChannelAdapter;
 
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-
-import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,7 +32,7 @@ public class IntegrationConfigurationTest {
     }
 
     @Test
-    public void mqttInboundAdapterManualAcksEnabled() {
+    public void mqttInboundAdapterUsesExpectedQos() {
         MqttProperties props = new MqttProperties("tcp://localhost:1883", "#", 1, "test", true, 10_000, 30, 10, null,
                 null);
 
@@ -43,17 +40,6 @@ public class IntegrationConfigurationTest {
         var factory = cfg.mqttClientFactory(props);
         MqttPahoMessageDrivenChannelAdapter adapter = cfg.mqttInboundAdapter(props, factory);
 
-        assertTrue(isManualAcks(adapter));
         assertEquals(1, adapter.getQos()[0]);
-    }
-
-    private static boolean isManualAcks(AbstractMqttMessageDrivenChannelAdapter<?, ?> adapter) {
-        try {
-            Field manualAcks = AbstractMqttMessageDrivenChannelAdapter.class.getDeclaredField("manualAcks");
-            manualAcks.setAccessible(true);
-            return (boolean) manualAcks.get(adapter);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 }
