@@ -34,12 +34,10 @@ public class IntegrationConfiguration {
         options.setKeepAliveInterval(mqttProperties.keepAliveIntervalSeconds());
         options.setConnectionTimeout(mqttProperties.connectionTimeoutSeconds());
 
-        if (mqttProperties.username() != null && !mqttProperties.username().isBlank()) {
-            options.setUserName(mqttProperties.username());
-            if (mqttProperties.password() != null) {
-                options.setPassword(mqttProperties.password().toCharArray());
-            }
-        }
+        mqttProperties.credentials().ifPresent(credentials -> {
+            options.setUserName(credentials.username());
+            options.setPassword(credentials.password().toCharArray());
+        });
 
         factory.setConnectionOptions(options);
         return factory;
