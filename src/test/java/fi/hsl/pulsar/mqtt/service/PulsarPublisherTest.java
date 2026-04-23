@@ -4,6 +4,7 @@ import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.TypedMessageBuilder;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.Map;
 
@@ -37,10 +38,8 @@ public class PulsarPublisherTest {
         byte[] payload = "p".getBytes();
         publisher.publish(payload, 123L, "mqtt-raw", 1);
 
-        @SuppressWarnings("unchecked")
-        org.mockito.ArgumentCaptor<Map> propsCaptor = org.mockito.ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<String, String>> propsCaptor = ArgumentCaptor.captor();
         verify(builder).properties(propsCaptor.capture());
-        @SuppressWarnings("unchecked")
         Map<String, String> props = propsCaptor.getValue();
 
         assertEquals("123", props.get("source-ts"));
