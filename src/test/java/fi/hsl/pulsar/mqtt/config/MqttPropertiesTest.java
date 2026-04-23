@@ -69,6 +69,17 @@ public class MqttPropertiesTest {
     }
 
     @Test
+    public void blankUsernameAndPasswordTreatedAsAbsent() {
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 10_000, 30, 10, " ",
+                " ");
+
+        Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
+
+        assertTrue(violations.isEmpty());
+        assertTrue(props.credentials().isEmpty());
+    }
+
+    @Test
     public void rejectsUsernameWithoutPassword() {
         MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 10_000, 30, 10,
                 "user", null);
@@ -76,6 +87,7 @@ public class MqttPropertiesTest {
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
         assertFalse(violations.isEmpty());
+        assertTrue(props.credentials().isEmpty());
     }
 
     @Test
@@ -86,6 +98,29 @@ public class MqttPropertiesTest {
         Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
 
         assertFalse(violations.isEmpty());
+        assertTrue(props.credentials().isEmpty());
+    }
+
+    @Test
+    public void rejectsBlankUsernameWithNonBlankPassword() {
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 10_000, 30, 10, " ",
+                "p");
+
+        Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
+
+        assertFalse(violations.isEmpty());
+        assertTrue(props.credentials().isEmpty());
+    }
+
+    @Test
+    public void rejectsNonBlankUsernameWithBlankPassword() {
+        MqttProperties props = new MqttProperties("tcp://localhost:1883", "test/#", 1, "cid", true, 10_000, 30, 10, "u",
+                " ");
+
+        Set<ConstraintViolation<MqttProperties>> violations = validator.validate(props);
+
+        assertFalse(violations.isEmpty());
+        assertTrue(props.credentials().isEmpty());
     }
 
     @Test
