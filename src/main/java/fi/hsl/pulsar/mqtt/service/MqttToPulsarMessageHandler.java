@@ -12,6 +12,7 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
+import java.util.concurrent.CompletionException;
 
 @Component
 public class MqttToPulsarMessageHandler implements MessageHandler {
@@ -51,17 +52,26 @@ public class MqttToPulsarMessageHandler implements MessageHandler {
         final byte[] pulsarPayload = rawMessageMapper.toRawMessageBytes(topic, mqttPayload);
         final int schemaVersion = rawMessageMapper.schemaVersion();
 
-        try {
-            pulsarPublisher.publish(pulsarPayload, now, PROTOBUF_SCHEMA_MQTT_RAW_MESSAGE, schemaVersion);
-            acknowledgment.acknowledge();
-        } catch (PulsarClientException.TimeoutException e) {
-            log.error("Pulsar send timed out; failing fast to avoid ingesting buffered MQTT messages");
-            failFastShutdown.exitWithFailure(e);
-            throw new MessagingException(message, e);
-        } catch (PulsarClientException e) {
-            log.error("Pulsar send failed; failing fast", e);
-            failFastShutdown.exitWithFailure(e);
-            throw new MessagingException(message, e);
+        // Acknowledge MQTT only after Pulsar confirms persistence. Per-producer completion order
+        // equals send order, so MQTT acks fire in the same order the messages arrived.
+        pulsarPublisher.publish(pulsarPayload, now, PROTOBUF_SCHEMA_MQTT_RAW_MESSAGE, schemaVersion)
+                .thenAccept(messageId -> acknowledgment.acknowledge()).exceptionally(throwable -> {
+                    Throwable cause = unwrap(throwable);
+                    if (cause instanceof PulsarClientException.TimeoutException) {
+                        log.error("Pulsar send timed out; failing fast to avoid ingesting buffered MQTT messages",
+                                cause);
+                    } else {
+                        log.error("Pulsar send failed; failing fast", cause);
+                    }
+                    failFastShutdown.exitWithFailure(cause);
+                    return null;
+                });
+    }
+
+    private static Throwable unwrap(Throwable throwable) {
+        if (throwable instanceof CompletionException && throwable.getCause() != null) {
+            return throwable.getCause();
         }
+        return throwable;
     }
 }
