@@ -1,6 +1,7 @@
 package fi.hsl.pulsar.mqtt.service;
 
 import fi.hsl.pulsar.mqtt.config.PulsarProperties;
+import org.apache.pulsar.client.api.MessageId;
 import org.apache.pulsar.client.api.Producer;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PreDestroy;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -49,16 +51,35 @@ public class PulsarPublisher {
         this.producer = producer;
     }
 
-    public void publish(byte[] payload, long eventTimeMs, String protobufSchema, int schemaVersion)
-            throws PulsarClientException {
+    /**
+     * Submit a message to the Pulsar producer asynchronously.
+     *
+     * <p>Completion order equals send order per producer, which the caller relies on to preserve
+     * per-MQTT-topic ordering when acknowledging MQTT messages in the completion callback.
+     *
+     * <p>If {@code sendAsync} itself throws synchronously (for example because the producer is
+     * already closed or the calling thread was interrupted while waiting for queue space), the
+     * returned future completes exceptionally so that callers handle all failures uniformly.
+     */
+    public CompletableFuture<MessageId> publish(byte[] payload, long eventTimeMs, String protobufSchema,
+            int schemaVersion) {
         Map<String, String> properties = Map.of(KEY_SOURCE_MESSAGE_TIMESTAMP_MS, String.valueOf(eventTimeMs),
                 KEY_PROTOBUF_SCHEMA, protobufSchema, KEY_SCHEMA_VERSION, Integer.toString(schemaVersion));
 
-        producer.newMessage().eventTime(eventTimeMs).value(payload).properties(properties).send();
+        try {
+            return producer.newMessage().eventTime(eventTimeMs).value(payload).properties(properties).sendAsync();
+        } catch (RuntimeException e) {
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @PreDestroy
     public void close() {
+        try {
+            producer.flush();
+        } catch (Exception e) {
+            log.warn("Failed to flush Pulsar producer before close", e);
+        }
         try {
             producer.close();
         } catch (Exception e) {
