@@ -36,6 +36,8 @@ RUN --mount=type=secret,id=github_token \
 # ============================
 FROM base AS build
 
+ARG GITHUB_ACTOR
+
 COPY src src
 
 RUN --mount=type=secret,id=github_token \
