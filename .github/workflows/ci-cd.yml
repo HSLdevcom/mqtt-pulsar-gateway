@@ -8,8 +8,8 @@ jobs:
     secrets: inherit
     with:
       uploadJarArtifact: true
-      jarArtifactName: mqtt-pulsar-gateway-jar-with-dependencies.jar
-      jarArtifactPath: target/mqtt-pulsar-gateway-jar-with-dependencies.jar
+      jarArtifactName: mqtt-pulsar-gateway.jar
+      jarArtifactPath: target/mqtt-pulsar-gateway.jar
       workingDirectory: .
       runTestsInsideDocker: true
 
