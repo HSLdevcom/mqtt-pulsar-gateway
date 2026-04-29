@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@issue/fix-build-and-push-docker-image
+    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@1.0.7
     secrets: inherit
     with:
       uploadJarArtifact: true
@@ -21,7 +21,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          name: mqtt-pulsar-gateway.jar
           path: target
       - name: Build and publish develop Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -40,7 +40,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          name: mqtt-pulsar-gateway.jar
           path: target
       - name: Build and publish release Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -59,7 +59,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          name: mqtt-pulsar-gateway.jar
           path: target
       - name: Build and publish aks-dev Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
@@ -77,7 +77,7 @@ jobs:
       - name: Download .jar file
         uses: actions/download-artifact@v4
         with:
-          name: mqtt-pulsar-gateway-jar-with-dependencies.jar
+          name: mqtt-pulsar-gateway.jar
           path: target
       - name: Build and publish aks-prod Docker image
         uses: elgohr/Publish-Docker-Github-Action@master
