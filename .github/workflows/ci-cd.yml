@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@1.0.6
+    uses: HSLdevcom/transitdata-shared-workflows/.github/workflows/ci-cd-java.yml@issue/fix-build-and-push-docker-image
     secrets: inherit
     with:
       uploadJarArtifact: true
