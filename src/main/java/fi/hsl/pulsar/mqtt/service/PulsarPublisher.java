@@ -30,7 +30,7 @@ public class PulsarPublisher {
 
     @Autowired
     public PulsarPublisher(PulsarProperties props) throws PulsarClientException {
-        this.client = PulsarClient.builder().serviceUrl(props.serviceUrl()).build();
+        this.client = PulsarClient.builder().serviceUrl("pulsar://" + props.host() + ":" + props.port()).build();
         try {
             this.producer = client.newProducer(Schema.BYTES).topic(props.topic())
                     .sendTimeout(props.sendTimeoutSeconds(), TimeUnit.SECONDS)

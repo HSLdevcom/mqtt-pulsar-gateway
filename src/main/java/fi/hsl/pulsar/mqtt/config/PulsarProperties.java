@@ -7,6 +7,6 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "pulsar")
-public record PulsarProperties(@NotBlank String serviceUrl, @NotBlank String topic, @Positive int sendTimeoutSeconds,
-        @Positive int maxPendingMessages) {
+public record PulsarProperties(@NotBlank String host, @Positive int port, @NotBlank String topic,
+        @Positive int sendTimeoutSeconds, @Positive int maxPendingMessages) {
 }

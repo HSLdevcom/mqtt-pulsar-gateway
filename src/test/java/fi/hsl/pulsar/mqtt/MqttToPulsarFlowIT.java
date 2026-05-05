@@ -72,7 +72,9 @@ public class MqttToPulsarFlowIT {
     @Timeout(120)
     public void endToEndMqttToPulsar() throws Exception {
         String mqttBrokerUri = "tcp://" + mqttBroker.getHost() + ":" + mqttBroker.getFirstMappedPort();
-        String pulsarServiceUrl = pulsarBroker.getPulsarBrokerUrl();
+        String pulsarHost = pulsarBroker.getHost();
+        int pulsarPort = pulsarBroker.getMappedPort(PulsarContainer.BROKER_PORT);
+        String pulsarServiceUrl = "pulsar://" + pulsarHost + ":" + pulsarPort;
         String pulsarTopic = "persistent://public/default/it-" + UUID.randomUUID();
 
         // Wire up the MQTT inbound adapter.
@@ -86,7 +88,7 @@ public class MqttToPulsarFlowIT {
         adapter.setDisconnectCompletionTimeout(5000);
 
         // Create a real PulsarPublisher connected to the Pulsar container.
-        PulsarProperties pulsarProps = new PulsarProperties(pulsarServiceUrl, pulsarTopic, 20, 10_000);
+        PulsarProperties pulsarProps = new PulsarProperties(pulsarHost, pulsarPort, pulsarTopic, 20, 10_000);
         PulsarPublisher publisher = new PulsarPublisher(pulsarProps);
 
         FailFastShutdown shutdown = mock(FailFastShutdown.class);
