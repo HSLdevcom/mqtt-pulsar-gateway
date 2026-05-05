@@ -41,7 +41,8 @@ All configuration is via environment variables.
 Spring Boot binds them to the properties below.
 
 The application exposes Spring Boot Actuator endpoints on the default port (8080):
-`/actuator/health` and `/actuator/info`.
+`/actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness` and `/actuator/info`.
+Configure the Kubernetes liveness probe to hit `/actuator/health/liveness` and the readiness probe to hit `/actuator/health/readiness`.
 
 The application emits structured logs in Logstash JSON format to stdout.
 
