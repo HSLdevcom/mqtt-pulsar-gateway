@@ -11,7 +11,8 @@ mqtt:
   password: ${MQTT_BROKER_PASSWORD:}
 
 pulsar:
-  serviceUrl: ${PULSAR_SERVICE_URL}
+  host: ${PULSAR_HOST}
+  port: ${PULSAR_PORT:6650}
   topic: ${PULSAR_PRODUCER_TOPIC}
   sendTimeoutSeconds: ${PULSAR_SEND_TIMEOUT_SECONDS:20}
   maxPendingMessages: ${PULSAR_PRODUCER_QUEUE_SIZE:10000}

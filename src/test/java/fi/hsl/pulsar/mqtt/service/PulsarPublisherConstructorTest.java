@@ -27,7 +27,7 @@ public class PulsarPublisherConstructorTest {
     @Test
     @SuppressWarnings("unchecked")
     public void constructorBuildsClientAndProducer() throws Exception {
-        PulsarProperties props = new PulsarProperties("pulsar://x:6650", "mqtt-raw", 7, 42);
+        PulsarProperties props = new PulsarProperties("x", 6650, "mqtt-raw", 7, 42);
 
         PulsarClient client = mock(PulsarClient.class);
         Producer<byte[]> producer = mock(Producer.class);
@@ -62,7 +62,7 @@ public class PulsarPublisherConstructorTest {
     @Test
     @SuppressWarnings("unchecked")
     public void constructorClosesClientWhenProducerCreationFails() throws Exception {
-        PulsarProperties props = new PulsarProperties("pulsar://x:6650", "mqtt-raw", 7, 42);
+        PulsarProperties props = new PulsarProperties("x", 6650, "mqtt-raw", 7, 42);
 
         PulsarClient client = mock(PulsarClient.class);
         PulsarClientException producerError = new PulsarClientException("producer creation failed");
