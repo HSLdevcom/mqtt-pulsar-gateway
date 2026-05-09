@@ -25,8 +25,14 @@ public class PulsarPublisher implements SmartLifecycle {
     private static final String KEY_PROTOBUF_SCHEMA = "protobuf-schema";
     private static final String KEY_SCHEMA_VERSION = "schema-version";
 
+    /** How long {@link #connect()} retries before giving up. Overridden to 0 in unit tests. */
+    static final long DEFAULT_CONNECT_RETRY_TIMEOUT_MS = 90_000;
+
+    private static final long CONNECT_RETRY_DELAY_MS = 5_000;
+
     private final PulsarProperties props;
     private final FailFastShutdown failFastShutdown;
+    private final long connectRetryTimeoutMs;
 
     private volatile PulsarClient client;
     private volatile Producer<byte[]> producer;
@@ -34,22 +40,33 @@ public class PulsarPublisher implements SmartLifecycle {
 
     @Autowired
     public PulsarPublisher(PulsarProperties props, FailFastShutdown failFastShutdown) {
+        this(props, failFastShutdown, DEFAULT_CONNECT_RETRY_TIMEOUT_MS);
+    }
+
+    PulsarPublisher(PulsarProperties props, FailFastShutdown failFastShutdown, long connectRetryTimeoutMs) {
         this.props = props;
         this.failFastShutdown = failFastShutdown;
+        this.connectRetryTimeoutMs = connectRetryTimeoutMs;
     }
 
     PulsarPublisher(PulsarClient client, Producer<byte[]> producer) {
         this.props = null;
         this.failFastShutdown = null;
+        this.connectRetryTimeoutMs = 0;
         this.client = client;
         this.producer = producer;
         this.running = true;
     }
 
     /**
-     * Connects to Pulsar in a background thread so the web server (and its health endpoints) can
-     * start on port 8080 before the connection attempt completes. This prevents the startup probe
-     * from seeing "connection refused" when Pulsar is slow or temporarily unreachable.
+     * Spawns a virtual thread that calls {@link #connect()} so the web server (and its health
+     * endpoints) can start on port 8080 while the Pulsar connection is being established. This
+     * prevents the startup probe from seeing "connection refused" when Pulsar is slow or
+     * temporarily unreachable.
+     *
+     * <p>{@link #connect()} retries for up to {@link #DEFAULT_CONNECT_RETRY_TIMEOUT_MS} ms before
+     * triggering fail-fast shutdown, giving the Pulsar broker time to become available and ensuring
+     * the web server has started before the pod exits.
      *
      * <p>Phase {@code Integer.MAX_VALUE / 2 - 1} ensures this runs before the Spring Integration
      * MQTT inbound adapter (phase {@code Integer.MAX_VALUE / 2}), so the producer is ready by the
@@ -61,30 +78,45 @@ public class PulsarPublisher implements SmartLifecycle {
     }
 
     void connect() {
-        try {
-            PulsarClient c = PulsarClient.builder().serviceUrl("pulsar://" + props.host() + ":" + props.port())
-                    .connectionTimeout(10, TimeUnit.SECONDS).operationTimeout(30, TimeUnit.SECONDS).build();
-            Producer<byte[]> p;
+        long deadline = System.currentTimeMillis() + connectRetryTimeoutMs;
+        PulsarClientException lastException = null;
+        do {
+            PulsarClient c = null;
             try {
-                p = c.newProducer(Schema.BYTES).topic(props.topic())
+                c = PulsarClient.builder().serviceUrl("pulsar://" + props.host() + ":" + props.port())
+                        .connectionTimeout(10, TimeUnit.SECONDS).operationTimeout(30, TimeUnit.SECONDS).build();
+                Producer<byte[]> p = c.newProducer(Schema.BYTES).topic(props.topic())
                         .sendTimeout(props.sendTimeoutSeconds(), TimeUnit.SECONDS)
                         .maxPendingMessages(props.maxPendingMessages()).blockIfQueueFull(true).create();
+                this.client = c;
+                this.producer = p;
+                this.running = true;
+                log.info("Pulsar producer created, topic={}", props.topic());
+                return;
             } catch (PulsarClientException e) {
-                try {
-                    c.close();
-                } catch (PulsarClientException closeEx) {
-                    e.addSuppressed(closeEx);
+                lastException = e;
+                if (c != null) {
+                    try {
+                        c.close();
+                    } catch (PulsarClientException closeEx) {
+                        e.addSuppressed(closeEx);
+                    }
                 }
-                throw e;
+                if (System.currentTimeMillis() < deadline) {
+                    log.warn("Failed to connect to Pulsar, retrying in {}ms", CONNECT_RETRY_DELAY_MS, e);
+                    try {
+                        Thread.sleep(CONNECT_RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        failFastShutdown.exitWithFailure(ie);
+                        return;
+                    }
+                }
             }
-            this.client = c;
-            this.producer = p;
-            this.running = true;
-            log.info("Pulsar producer created, topic={}", props.topic());
-        } catch (PulsarClientException e) {
-            log.error("Failed to connect to Pulsar, triggering fail-fast shutdown", e);
-            failFastShutdown.exitWithFailure(e);
-        }
+        } while (System.currentTimeMillis() < deadline);
+        log.error("Failed to connect to Pulsar after {}ms, triggering fail-fast shutdown", connectRetryTimeoutMs,
+                lastException);
+        failFastShutdown.exitWithFailure(lastException);
     }
 
     @Override
