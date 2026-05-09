@@ -12,6 +12,7 @@ import org.mockito.MockedStatic;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -159,6 +160,53 @@ public class PulsarPublisherConstructorTest {
             verify(client).close();
             verify(failFastShutdown).exitWithFailure(producerError);
             assertSame(closeError, producerError.getSuppressed()[0]);
+        }
+    }
+
+    @Test
+    public void twoArgConstructorSetsNotRunning() {
+        PulsarProperties props = new PulsarProperties("x", 6650, "mqtt-raw", 7, 42);
+        FailFastShutdown failFastShutdown = mock(FailFastShutdown.class);
+        PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown);
+        assertFalse(publisher.isRunning());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void connectCallsFailFastWhenInterruptedDuringRetrySleep() throws Exception {
+        PulsarProperties props = new PulsarProperties("x", 6650, "mqtt-raw", 7, 42);
+        FailFastShutdown failFastShutdown = mock(FailFastShutdown.class);
+
+        PulsarClient client = mock(PulsarClient.class);
+        ProducerBuilder<byte[]> producerBuilder = mockProducerBuilder(client);
+        when(producerBuilder.create()).thenThrow(new PulsarClientException("always fails"));
+
+        ClientBuilder clientBuilder = mockClientBuilder(client);
+
+        Thread testThread = Thread.currentThread();
+        // Interrupt the test thread shortly after connect() enters the retry sleep.
+        Thread interrupter = new Thread(() -> {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException ignored) {
+            }
+            testThread.interrupt();
+        });
+        interrupter.setDaemon(true);
+        interrupter.start();
+
+        try (MockedStatic<PulsarClient> pulsarClientStatic = mockStatic(PulsarClient.class)) {
+            pulsarClientStatic.when(PulsarClient::builder).thenReturn(clientBuilder);
+            // retryTimeoutMs=60s keeps us inside the retry loop; retryDelayMs=10s so the sleep is
+            // long enough for the interrupter to fire.
+            PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown, 60_000, 10_000);
+            publisher.connect();
+
+            verify(failFastShutdown).exitWithFailure(any(InterruptedException.class));
+            assertFalse(publisher.isRunning());
+        } finally {
+            // Clear the interrupt flag so it doesn't bleed into subsequent tests.
+            Thread.interrupted();
         }
     }
 
