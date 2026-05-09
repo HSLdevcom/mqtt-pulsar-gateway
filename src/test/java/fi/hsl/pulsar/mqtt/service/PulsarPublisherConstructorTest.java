@@ -50,7 +50,7 @@ public class PulsarPublisherConstructorTest {
         try (MockedStatic<PulsarClient> pulsarClientStatic = mockStatic(PulsarClient.class)) {
             pulsarClientStatic.when(PulsarClient::builder).thenReturn(clientBuilder);
 
-            PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown);
+            PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown, 0);
             publisher.connect();
 
             verify(clientBuilder).serviceUrl("pulsar://x:6650");
@@ -91,7 +91,7 @@ public class PulsarPublisherConstructorTest {
         try (MockedStatic<PulsarClient> pulsarClientStatic = mockStatic(PulsarClient.class)) {
             pulsarClientStatic.when(PulsarClient::builder).thenReturn(clientBuilder);
 
-            PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown);
+            PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown, 0);
             publisher.connect();
 
             verify(client).close();
