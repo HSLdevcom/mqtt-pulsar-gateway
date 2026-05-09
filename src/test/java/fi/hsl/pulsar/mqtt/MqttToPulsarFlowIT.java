@@ -87,11 +87,18 @@ public class MqttToPulsarFlowIT {
         adapter.setCompletionTimeout(5000);
         adapter.setDisconnectCompletionTimeout(5000);
 
-        // Create a real PulsarPublisher connected to the Pulsar container.
+        // Create a real PulsarPublisher and let it connect via start().
         PulsarProperties pulsarProps = new PulsarProperties(pulsarHost, pulsarPort, pulsarTopic, 20, 10_000);
-        PulsarPublisher publisher = new PulsarPublisher(pulsarProps);
-
         FailFastShutdown shutdown = mock(FailFastShutdown.class);
+        PulsarPublisher publisher = new PulsarPublisher(pulsarProps, shutdown);
+        publisher.start();
+
+        long deadline = System.currentTimeMillis() + 30_000;
+        while (!publisher.isRunning() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(100);
+        }
+        assertTrue(publisher.isRunning(), "PulsarPublisher should connect within 30 s");
+
         RawMessageMapper mapper = new RawMessageMapper();
         MqttToPulsarMessageHandler handler = new MqttToPulsarMessageHandler(mapper, publisher, shutdown);
 
@@ -142,7 +149,7 @@ public class MqttToPulsarFlowIT {
         consumerClient.close();
         mqttClient.disconnect();
         mqttClient.close(true);
-        publisher.close();
+        publisher.stop();
         adapter.stop();
         adapter.destroy();
     }

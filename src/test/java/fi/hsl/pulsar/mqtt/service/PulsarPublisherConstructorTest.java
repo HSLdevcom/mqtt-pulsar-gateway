@@ -13,7 +13,7 @@ import org.mockito.MockedStatic;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -26,8 +26,9 @@ public class PulsarPublisherConstructorTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void constructorBuildsClientAndProducer() throws Exception {
+    public void connectBuildsClientAndProducer() throws Exception {
         PulsarProperties props = new PulsarProperties("x", 6650, "mqtt-raw", 7, 42);
+        FailFastShutdown failFastShutdown = mock(FailFastShutdown.class);
 
         PulsarClient client = mock(PulsarClient.class);
         Producer<byte[]> producer = mock(Producer.class);
@@ -42,27 +43,33 @@ public class PulsarPublisherConstructorTest {
 
         ClientBuilder clientBuilder = mock(ClientBuilder.class);
         when(clientBuilder.serviceUrl(anyString())).thenReturn(clientBuilder);
+        when(clientBuilder.connectionTimeout(anyInt(), eq(TimeUnit.SECONDS))).thenReturn(clientBuilder);
+        when(clientBuilder.operationTimeout(anyInt(), eq(TimeUnit.SECONDS))).thenReturn(clientBuilder);
         when(clientBuilder.build()).thenReturn(client);
 
-        try (MockedStatic<PulsarClient> pulsarClient = mockStatic(PulsarClient.class)) {
-            pulsarClient.when(PulsarClient::builder).thenReturn(clientBuilder);
+        try (MockedStatic<PulsarClient> pulsarClientStatic = mockStatic(PulsarClient.class)) {
+            pulsarClientStatic.when(PulsarClient::builder).thenReturn(clientBuilder);
 
-            new PulsarPublisher(props);
+            PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown);
+            publisher.connect();
 
             verify(clientBuilder).serviceUrl("pulsar://x:6650");
+            verify(clientBuilder).connectionTimeout(10, TimeUnit.SECONDS);
+            verify(clientBuilder).operationTimeout(30, TimeUnit.SECONDS);
             verify(client).newProducer(Schema.BYTES);
             verify(producerBuilder).topic("mqtt-raw");
             verify(producerBuilder).sendTimeout(7, TimeUnit.SECONDS);
             verify(producerBuilder).maxPendingMessages(42);
             verify(producerBuilder).blockIfQueueFull(true);
-            verify(producerBuilder).create();
+            assertTrue(publisher.isRunning());
         }
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    public void constructorClosesClientWhenProducerCreationFails() throws Exception {
+    public void connectClosesClientAndCallsFailFastWhenProducerCreationFails() throws Exception {
         PulsarProperties props = new PulsarProperties("x", 6650, "mqtt-raw", 7, 42);
+        FailFastShutdown failFastShutdown = mock(FailFastShutdown.class);
 
         PulsarClient client = mock(PulsarClient.class);
         PulsarClientException producerError = new PulsarClientException("producer creation failed");
@@ -77,14 +84,18 @@ public class PulsarPublisherConstructorTest {
 
         ClientBuilder clientBuilder = mock(ClientBuilder.class);
         when(clientBuilder.serviceUrl(anyString())).thenReturn(clientBuilder);
+        when(clientBuilder.connectionTimeout(anyInt(), eq(TimeUnit.SECONDS))).thenReturn(clientBuilder);
+        when(clientBuilder.operationTimeout(anyInt(), eq(TimeUnit.SECONDS))).thenReturn(clientBuilder);
         when(clientBuilder.build()).thenReturn(client);
 
-        try (MockedStatic<PulsarClient> pulsarClient = mockStatic(PulsarClient.class)) {
-            pulsarClient.when(PulsarClient::builder).thenReturn(clientBuilder);
+        try (MockedStatic<PulsarClient> pulsarClientStatic = mockStatic(PulsarClient.class)) {
+            pulsarClientStatic.when(PulsarClient::builder).thenReturn(clientBuilder);
 
-            PulsarClientException thrown = assertThrows(PulsarClientException.class, () -> new PulsarPublisher(props));
-            assertSame(producerError, thrown);
+            PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown);
+            publisher.connect();
+
             verify(client).close();
+            verify(failFastShutdown).exitWithFailure(producerError);
         }
     }
 }
