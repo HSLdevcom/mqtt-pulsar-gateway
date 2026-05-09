@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -87,13 +88,24 @@ public class PulsarPublisherTest {
     }
 
     @Test
-    public void closeFlushesBeforeClosingProducer() throws Exception {
+    public void publishReturnsFailedFutureWhenProducerNotYetInitialized() {
+        PulsarPublisher publisher = new PulsarPublisher(mock(PulsarClient.class), null);
+
+        CompletableFuture<MessageId> result = publisher.publish("p".getBytes(), 1L, "mqtt-raw", 1);
+
+        assertTrue(result.isCompletedExceptionally());
+        ExecutionException ee = assertThrows(ExecutionException.class, result::get);
+        assertInstanceOf(IllegalStateException.class, ee.getCause());
+    }
+
+    @Test
+    public void stopFlushesBeforeClosingProducer() throws Exception {
         @SuppressWarnings("unchecked")
         Producer<byte[]> producer = mock(Producer.class);
         PulsarClient client = mock(PulsarClient.class);
 
         PulsarPublisher publisher = new PulsarPublisher(client, producer);
-        publisher.close();
+        publisher.stop();
 
         InOrder order = inOrder(producer, client);
         order.verify(producer).flush();
@@ -102,7 +114,7 @@ public class PulsarPublisherTest {
     }
 
     @Test
-    public void closeSwallowsErrorsFromFlushAndClose() throws Exception {
+    public void stopSwallowsErrorsFromFlushAndClose() throws Exception {
         @SuppressWarnings("unchecked")
         Producer<byte[]> producer = mock(Producer.class);
         PulsarClient client = mock(PulsarClient.class);
@@ -112,6 +124,6 @@ public class PulsarPublisherTest {
         doThrow(new RuntimeException("boom")).when(client).close();
 
         PulsarPublisher publisher = new PulsarPublisher(client, producer);
-        publisher.close();
+        publisher.stop();
     }
 }
