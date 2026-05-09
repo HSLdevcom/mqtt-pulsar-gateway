@@ -28,11 +28,13 @@ public class PulsarPublisher implements SmartLifecycle {
     /** How long {@link #connect()} retries before giving up. Overridden to 0 in unit tests. */
     static final long DEFAULT_CONNECT_RETRY_TIMEOUT_MS = 90_000;
 
-    private static final long CONNECT_RETRY_DELAY_MS = 5_000;
+    /** Pause between connect attempts. Overridden to 1 in unit tests so retries are instantaneous. */
+    static final long DEFAULT_CONNECT_RETRY_DELAY_MS = 5_000;
 
     private final PulsarProperties props;
     private final FailFastShutdown failFastShutdown;
     private final long connectRetryTimeoutMs;
+    private final long connectRetryDelayMs;
 
     private volatile PulsarClient client;
     private volatile Producer<byte[]> producer;
@@ -40,19 +42,26 @@ public class PulsarPublisher implements SmartLifecycle {
 
     @Autowired
     public PulsarPublisher(PulsarProperties props, FailFastShutdown failFastShutdown) {
-        this(props, failFastShutdown, DEFAULT_CONNECT_RETRY_TIMEOUT_MS);
+        this(props, failFastShutdown, DEFAULT_CONNECT_RETRY_TIMEOUT_MS, DEFAULT_CONNECT_RETRY_DELAY_MS);
     }
 
     PulsarPublisher(PulsarProperties props, FailFastShutdown failFastShutdown, long connectRetryTimeoutMs) {
+        this(props, failFastShutdown, connectRetryTimeoutMs, DEFAULT_CONNECT_RETRY_DELAY_MS);
+    }
+
+    PulsarPublisher(PulsarProperties props, FailFastShutdown failFastShutdown, long connectRetryTimeoutMs,
+            long connectRetryDelayMs) {
         this.props = props;
         this.failFastShutdown = failFastShutdown;
         this.connectRetryTimeoutMs = connectRetryTimeoutMs;
+        this.connectRetryDelayMs = connectRetryDelayMs;
     }
 
     PulsarPublisher(PulsarClient client, Producer<byte[]> producer) {
         this.props = null;
         this.failFastShutdown = null;
         this.connectRetryTimeoutMs = 0;
+        this.connectRetryDelayMs = 0;
         this.client = client;
         this.producer = producer;
         this.running = true;
@@ -103,9 +112,9 @@ public class PulsarPublisher implements SmartLifecycle {
                     }
                 }
                 if (System.currentTimeMillis() < deadline) {
-                    log.warn("Failed to connect to Pulsar, retrying in {}ms", CONNECT_RETRY_DELAY_MS, e);
+                    log.warn("Failed to connect to Pulsar, retrying in {}ms", connectRetryDelayMs, e);
                     try {
-                        Thread.sleep(CONNECT_RETRY_DELAY_MS);
+                        Thread.sleep(connectRetryDelayMs);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         failFastShutdown.exitWithFailure(ie);
