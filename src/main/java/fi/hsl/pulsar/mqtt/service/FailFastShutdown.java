@@ -2,6 +2,7 @@ package fi.hsl.pulsar.mqtt.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,7 @@ public class FailFastShutdown {
     private final AtomicBoolean exitTriggered = new AtomicBoolean(false);
     private final long startTimeMs;
 
+    @Autowired
     public FailFastShutdown(ApplicationContext applicationContext) {
         this(applicationContext, System.currentTimeMillis());
     }
