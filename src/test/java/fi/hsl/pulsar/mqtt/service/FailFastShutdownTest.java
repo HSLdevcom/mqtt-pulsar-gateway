@@ -60,6 +60,37 @@ public class FailFastShutdownTest {
     }
 
     @Test
+    @Timeout(5)
+    public void shutdownFiresImmediatelyWhenGracePeriodSleepIsInterrupted() throws InterruptedException {
+        // Start time = now, so the full grace period must elapse. We will interrupt the shutdown
+        // thread mid-sleep to verify it still calls doExit() promptly.
+        TestableFailFastShutdown shutdown = new TestableFailFastShutdown(System.currentTimeMillis());
+
+        shutdown.exitWithFailure(new RuntimeException("trigger"));
+
+        // Find the FailFastShutdownThread and interrupt it.
+        Thread shutdownThread = null;
+        long findDeadline = System.currentTimeMillis() + 2_000;
+        while (shutdownThread == null && System.currentTimeMillis() < findDeadline) {
+            for (Thread t : Thread.getAllStackTraces().keySet()) {
+                if ("FailFastShutdownThread".equals(t.getName())) {
+                    shutdownThread = t;
+                    break;
+                }
+            }
+            if (shutdownThread == null) {
+                Thread.sleep(10);
+            }
+        }
+        org.junit.jupiter.api.Assertions.assertNotNull(shutdownThread, "FailFastShutdownThread not found");
+        shutdownThread.interrupt();
+
+        // After interruption the thread should fall through and call doExit() immediately.
+        assertTrue(shutdown.exitLatch.await(2, TimeUnit.SECONDS), "doExit should be called after interrupt");
+        assertEquals(1, shutdown.exitCount.get(), "doExit should be called exactly once");
+    }
+
+    @Test
     @Timeout(10)
     public void shutdownIsDelayedUntilGracePeriodWhenCalledEarly() throws InterruptedException {
         // Start time = now, so the full grace period must elapse before doExit() is called.
