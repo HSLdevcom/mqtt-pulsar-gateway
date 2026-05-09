@@ -8,6 +8,7 @@ import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,7 @@ public class PulsarPublisher implements SmartLifecycle {
     private volatile Producer<byte[]> producer;
     private volatile boolean running = false;
 
+    @Autowired
     public PulsarPublisher(PulsarProperties props, FailFastShutdown failFastShutdown) {
         this.props = props;
         this.failFastShutdown = failFastShutdown;
@@ -60,11 +62,8 @@ public class PulsarPublisher implements SmartLifecycle {
 
     void connect() {
         try {
-            PulsarClient c = PulsarClient.builder()
-                    .serviceUrl("pulsar://" + props.host() + ":" + props.port())
-                    .connectionTimeout(10, TimeUnit.SECONDS)
-                    .operationTimeout(30, TimeUnit.SECONDS)
-                    .build();
+            PulsarClient c = PulsarClient.builder().serviceUrl("pulsar://" + props.host() + ":" + props.port())
+                    .connectionTimeout(10, TimeUnit.SECONDS).operationTimeout(30, TimeUnit.SECONDS).build();
             Producer<byte[]> p;
             try {
                 p = c.newProducer(Schema.BYTES).topic(props.topic())
@@ -142,8 +141,7 @@ public class PulsarPublisher implements SmartLifecycle {
             int schemaVersion) {
         Producer<byte[]> p = this.producer;
         if (p == null) {
-            return CompletableFuture.failedFuture(
-                    new IllegalStateException("Pulsar producer is not yet initialized"));
+            return CompletableFuture.failedFuture(new IllegalStateException("Pulsar producer is not yet initialized"));
         }
         Map<String, String> properties = Map.of(KEY_SOURCE_MESSAGE_TIMESTAMP_MS, String.valueOf(eventTimeMs),
                 KEY_PROTOBUF_SCHEMA, protobufSchema, KEY_SCHEMA_VERSION, Integer.toString(schemaVersion));
