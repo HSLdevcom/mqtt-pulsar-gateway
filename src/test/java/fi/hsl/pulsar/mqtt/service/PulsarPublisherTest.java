@@ -13,7 +13,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -85,17 +84,6 @@ public class PulsarPublisherTest {
         assertTrue(result.isCompletedExceptionally());
         ExecutionException ee = assertThrows(ExecutionException.class, result::get);
         assertSame(failure, ee.getCause());
-    }
-
-    @Test
-    public void publishReturnsFailedFutureWhenProducerNotYetInitialized() {
-        PulsarPublisher publisher = new PulsarPublisher(mock(PulsarClient.class), null);
-
-        CompletableFuture<MessageId> result = publisher.publish("p".getBytes(), 1L, "mqtt-raw", 1);
-
-        assertTrue(result.isCompletedExceptionally());
-        ExecutionException ee = assertThrows(ExecutionException.class, result::get);
-        assertInstanceOf(IllegalStateException.class, ee.getCause());
     }
 
     @Test

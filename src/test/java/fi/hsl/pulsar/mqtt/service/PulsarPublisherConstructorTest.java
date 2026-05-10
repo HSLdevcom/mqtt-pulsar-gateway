@@ -164,6 +164,15 @@ public class PulsarPublisherConstructorTest {
     }
 
     @Test
+    public void publishReturnsPendingFutureWhenCalledBeforeConnect() {
+        PulsarProperties props = new PulsarProperties("x", 6650, "mqtt-raw", 7, 42);
+        FailFastShutdown failFastShutdown = mock(FailFastShutdown.class);
+        // Producer not yet connected — producerReady never completed.
+        PulsarPublisher publisher = new PulsarPublisher(props, failFastShutdown, 0);
+        assertFalse(publisher.publish("p".getBytes(), 1L, "mqtt-raw", 1).isDone());
+    }
+
+    @Test
     public void twoArgConstructorSetsNotRunning() {
         PulsarProperties props = new PulsarProperties("x", 6650, "mqtt-raw", 7, 42);
         FailFastShutdown failFastShutdown = mock(FailFastShutdown.class);
