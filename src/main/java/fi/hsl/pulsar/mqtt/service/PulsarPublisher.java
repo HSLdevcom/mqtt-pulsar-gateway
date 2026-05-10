@@ -40,6 +40,13 @@ public class PulsarPublisher implements SmartLifecycle {
     private volatile Producer<byte[]> producer;
     private volatile boolean running = false;
 
+    /**
+     * Completed by {@link #connect()} when the producer is ready, or completed exceptionally when
+     * connection ultimately fails. Messages that arrive via {@link #publish} before the producer is
+     * ready chain on this future non-blocking rather than failing immediately.
+     */
+    private final CompletableFuture<Producer<byte[]>> producerReady = new CompletableFuture<>();
+
     @Autowired
     public PulsarPublisher(PulsarProperties props, FailFastShutdown failFastShutdown) {
         this(props, failFastShutdown, DEFAULT_CONNECT_RETRY_TIMEOUT_MS, DEFAULT_CONNECT_RETRY_DELAY_MS);
@@ -65,6 +72,7 @@ public class PulsarPublisher implements SmartLifecycle {
         this.client = client;
         this.producer = producer;
         this.running = true;
+        producerReady.complete(producer);
     }
 
     /**
@@ -79,7 +87,7 @@ public class PulsarPublisher implements SmartLifecycle {
      *
      * <p>Phase {@code Integer.MAX_VALUE / 2 - 1} ensures this runs before the Spring Integration
      * MQTT inbound adapter (phase {@code Integer.MAX_VALUE / 2}), so the producer is ready by the
-     * time MQTT messages start flowing.
+     * time MQTT messages start flowing in the steady-state case.
      */
     @Override
     public void start() {
@@ -100,6 +108,7 @@ public class PulsarPublisher implements SmartLifecycle {
                 this.client = c;
                 this.producer = p;
                 this.running = true;
+                producerReady.complete(p);
                 log.info("Pulsar producer created, topic={}", props.topic());
                 return;
             } catch (PulsarClientException e) {
@@ -117,6 +126,7 @@ public class PulsarPublisher implements SmartLifecycle {
                         Thread.sleep(connectRetryDelayMs);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
+                        producerReady.completeExceptionally(ie);
                         failFastShutdown.exitWithFailure(ie);
                         return;
                     }
@@ -125,6 +135,7 @@ public class PulsarPublisher implements SmartLifecycle {
         } while (System.currentTimeMillis() < deadline);
         log.error("Failed to connect to Pulsar after {}ms, triggering fail-fast shutdown", connectRetryTimeoutMs,
                 lastException);
+        producerReady.completeExceptionally(lastException);
         failFastShutdown.exitWithFailure(lastException);
     }
 
@@ -167,23 +178,29 @@ public class PulsarPublisher implements SmartLifecycle {
     /**
      * Submit a message to the Pulsar producer asynchronously.
      *
+     * <p>If the producer is not yet ready (i.e. {@link #connect()} is still running), the message
+     * is queued non-blocking on the connection future and sent as soon as the producer becomes
+     * available. If connection ultimately fails, the returned future completes exceptionally so the
+     * caller triggers fail-fast shutdown.
+     *
      * <p>Completion order equals send order per producer, which the caller relies on to preserve
      * per-MQTT-topic ordering when acknowledging MQTT messages in the completion callback.
      *
      * <p>If {@code sendAsync} itself throws synchronously (for example because the producer is
      * already closed or the calling thread was interrupted while waiting for queue space), the
      * returned future completes exceptionally so that callers handle all failures uniformly.
-     *
-     * <p>If the producer is not yet initialized (i.e. {@link #start()} has not completed), the
-     * returned future completes exceptionally with {@link IllegalStateException}, which the caller
-     * treats as a fatal error and triggers fail-fast shutdown.
      */
     public CompletableFuture<MessageId> publish(byte[] payload, long eventTimeMs, String protobufSchema,
             int schemaVersion) {
         Producer<byte[]> p = this.producer;
-        if (p == null) {
-            return CompletableFuture.failedFuture(new IllegalStateException("Pulsar producer is not yet initialized"));
+        if (p != null) {
+            return doPublish(p, payload, eventTimeMs, protobufSchema, schemaVersion);
         }
+        return producerReady.thenCompose(prod -> doPublish(prod, payload, eventTimeMs, protobufSchema, schemaVersion));
+    }
+
+    private CompletableFuture<MessageId> doPublish(Producer<byte[]> p, byte[] payload, long eventTimeMs,
+            String protobufSchema, int schemaVersion) {
         Map<String, String> properties = Map.of(KEY_SOURCE_MESSAGE_TIMESTAMP_MS, String.valueOf(eventTimeMs),
                 KEY_PROTOBUF_SCHEMA, protobufSchema, KEY_SCHEMA_VERSION, Integer.toString(schemaVersion));
         try {
