@@ -1,90 +1,38 @@
 package fi.hsl.pulsar.mqtt.config;
 
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
+import java.util.Optional;
+
+@Validated
 @ConfigurationProperties(prefix = "mqtt")
-public class MqttProperties {
+public record MqttProperties(@NotBlank String brokerUrl, @NotBlank String topic, @Min(0) @Max(2) int qos,
+        @NotBlank String clientId, boolean cleanSession, @Positive int maxInflight,
+        @Positive int keepAliveIntervalSeconds, @Positive int connectionTimeoutSeconds, String username,
+        String password) {
 
-    private String brokerUrl;
-    private String topic;
-    private int qos = 1;
-    private String clientId = "mqtt-pulsar-gateway";
-    private int maxInflight = 10_000;
-    private int keepAliveIntervalSeconds = 30;
-    private int connectionTimeoutSeconds = 10;
-
-    private String username;
-    private String password;
-
-    public String getBrokerUrl() {
-        return brokerUrl;
+    public record Credentials(String username, String password) {
     }
 
-    public void setBrokerUrl(String brokerUrl) {
-        this.brokerUrl = brokerUrl;
+    public Optional<Credentials> credentials() {
+        if (hasValue(username) && hasValue(password)) {
+            return Optional.of(new Credentials(username, password));
+        }
+        return Optional.empty();
     }
 
-    public String getTopic() {
-        return topic;
+    @AssertTrue(message = "username and password must both be provided or both be absent")
+    public boolean isCredentialsComplete() {
+        return hasValue(username) == hasValue(password);
     }
 
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-    public int getQos() {
-        return qos;
-    }
-
-    public void setQos(int qos) {
-        this.qos = qos;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    public int getMaxInflight() {
-        return maxInflight;
-    }
-
-    public void setMaxInflight(int maxInflight) {
-        this.maxInflight = maxInflight;
-    }
-
-    public int getKeepAliveIntervalSeconds() {
-        return keepAliveIntervalSeconds;
-    }
-
-    public void setKeepAliveIntervalSeconds(int keepAliveIntervalSeconds) {
-        this.keepAliveIntervalSeconds = keepAliveIntervalSeconds;
-    }
-
-    public int getConnectionTimeoutSeconds() {
-        return connectionTimeoutSeconds;
-    }
-
-    public void setConnectionTimeoutSeconds(int connectionTimeoutSeconds) {
-        this.connectionTimeoutSeconds = connectionTimeoutSeconds;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
+    private static boolean hasValue(String value) {
+        return value != null && !value.isBlank();
     }
 }

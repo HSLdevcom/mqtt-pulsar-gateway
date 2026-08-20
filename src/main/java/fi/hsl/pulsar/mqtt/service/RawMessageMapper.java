@@ -7,16 +7,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class RawMessageMapper {
 
+    private static final int SCHEMA_VERSION = Mqtt.RawMessage.getDefaultInstance().getSchemaVersion();
+
     public int schemaVersion() {
-        return Mqtt.RawMessage.newBuilder().getSchemaVersion();
+        return SCHEMA_VERSION;
     }
 
     public byte[] toRawMessageBytes(String topic, byte[] payload) {
-        Mqtt.RawMessage.Builder builder = Mqtt.RawMessage.newBuilder();
-
-        Mqtt.RawMessage raw = builder.setSchemaVersion(builder.getSchemaVersion()).setTopic(topic)
-                .setPayload(ByteString.copyFrom(payload)).build();
-
-        return raw.toByteArray();
+        return Mqtt.RawMessage.newBuilder().setSchemaVersion(SCHEMA_VERSION).setTopic(topic)
+                .setPayload(ByteString.copyFrom(payload)).build().toByteArray();
     }
 }
