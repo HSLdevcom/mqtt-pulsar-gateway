@@ -17,10 +17,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>25</java.version>
         <common.version>3.0.0</common.version>
-        <jqwik.version>1.9.3</jqwik.version>
+        <jqwik.version>1.10.1</jqwik.version>
         <paho.version>1.2.5</paho.version>
         <pulsar-client.version>3.0.7</pulsar-client.version>
-        <spotlessMavenPlugin.version>2.43.0</spotlessMavenPlugin.version>
+        <spotlessMavenPlugin.version>3.10.0</spotlessMavenPlugin.version>
         <testcontainers-bom.version>2.0.3</testcontainers-bom.version>
     </properties>
 
@@ -122,7 +122,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.15.0</version>
                 <configuration>
                     <release>${java.version}</release>
                     <compilerArgs>
@@ -139,7 +139,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>3.5.6</version>
                 <executions>
                     <execution>
                         <id>integration-tests</id>
@@ -185,7 +185,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.14</version>
+                <version>0.8.15</version>
 
                 <executions>
                     <execution>
