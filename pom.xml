@@ -21,7 +21,7 @@
         <paho.version>1.2.5</paho.version>
         <pulsar-client.version>3.0.7</pulsar-client.version>
         <spotlessMavenPlugin.version>2.43.0</spotlessMavenPlugin.version>
-        <testcontainers-bom.version>2.0.3</testcontainers-bom.version>
+        <testcontainers-bom.version>2.0.5</testcontainers-bom.version>
     </properties>
 
     <repositories>
