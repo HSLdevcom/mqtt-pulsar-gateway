@@ -4,7 +4,7 @@
 # ============================
 # Base stage
 # ============================
-FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jdk AS base
+FROM hsldevcom/infodevops-docker-base-images:1.1.1-25-java-jdk AS base
 WORKDIR /usr/app
 
 ARG GITHUB_ACTOR=github-actions
@@ -48,7 +48,7 @@ RUN --mount=type=secret,id=github_token \
 # ============================
 # Runtime stage
 # ============================
-FROM hsldevcom/infodevops-docker-base-images:1.0.2-25-java-jre
+FROM hsldevcom/infodevops-docker-base-images:1.1.1-25-java-jre
 
 WORKDIR /usr/app
 
